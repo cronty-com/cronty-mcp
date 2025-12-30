@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Cronty MCP is a FastMCP server that enables AI agents to schedule notifications via Upstash QStash and NTFY.
 
-**Stack:** Python 3.14, FastMCP, Upstash QStash, NTFY, pytest
+**Stack:** Python 3.13+, FastMCP, Upstash QStash, NTFY, pytest
 
 ## Commands
 
