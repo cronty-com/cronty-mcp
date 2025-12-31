@@ -17,6 +17,13 @@ uv sync                    # Install dependencies
 cp .env.example .env       # Create local env file
 ```
 
+### Dependencies
+
+```bash
+uv add <package>           # Add dependency (never edit pyproject.toml directly)
+uv add --dev <package>     # Add dev dependency
+```
+
 ### Development
 
 ```bash
