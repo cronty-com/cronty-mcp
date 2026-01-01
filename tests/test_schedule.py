@@ -28,8 +28,6 @@ def mock_qstash():
 @pytest.fixture
 def env_vars(monkeypatch):
     monkeypatch.setenv("QSTASH_TOKEN", "test-token")
-    monkeypatch.setenv("QSTASH_CURRENT_SIGNING_KEY", "current-key")
-    monkeypatch.setenv("QSTASH_NEXT_SIGNING_KEY", "next-key")
     monkeypatch.setenv("NTFY_TOPIC", "test-topic")
 
 

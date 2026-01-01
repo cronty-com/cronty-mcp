@@ -13,8 +13,6 @@ async def client():
 
 async def test_health_returns_healthy_when_all_vars_set(client, monkeypatch):
     monkeypatch.setenv("QSTASH_TOKEN", "test-token")
-    monkeypatch.setenv("QSTASH_CURRENT_SIGNING_KEY", "current-key")
-    monkeypatch.setenv("QSTASH_NEXT_SIGNING_KEY", "next-key")
     monkeypatch.setenv("NTFY_TOPIC", "test-topic")
 
     result = await client.call_tool("health", {})
@@ -23,8 +21,6 @@ async def test_health_returns_healthy_when_all_vars_set(client, monkeypatch):
 
 async def test_health_fails_when_var_missing(client, monkeypatch):
     monkeypatch.delenv("QSTASH_TOKEN", raising=False)
-    monkeypatch.setenv("QSTASH_CURRENT_SIGNING_KEY", "current-key")
-    monkeypatch.setenv("QSTASH_NEXT_SIGNING_KEY", "next-key")
     monkeypatch.setenv("NTFY_TOPIC", "test-topic")
 
     with pytest.raises(ToolError) as exc_info:
@@ -34,8 +30,6 @@ async def test_health_fails_when_var_missing(client, monkeypatch):
 
 async def test_health_fails_when_var_empty(client, monkeypatch):
     monkeypatch.setenv("QSTASH_TOKEN", "test-token")
-    monkeypatch.setenv("QSTASH_CURRENT_SIGNING_KEY", "current-key")
-    monkeypatch.setenv("QSTASH_NEXT_SIGNING_KEY", "next-key")
     monkeypatch.setenv("NTFY_TOPIC", "")
 
     with pytest.raises(ToolError) as exc_info:
@@ -45,8 +39,6 @@ async def test_health_fails_when_var_empty(client, monkeypatch):
 
 async def test_health_reports_multiple_missing_vars(client, monkeypatch):
     monkeypatch.delenv("QSTASH_TOKEN", raising=False)
-    monkeypatch.setenv("QSTASH_CURRENT_SIGNING_KEY", "current-key")
-    monkeypatch.setenv("QSTASH_NEXT_SIGNING_KEY", "next-key")
     monkeypatch.delenv("NTFY_TOPIC", raising=False)
 
     with pytest.raises(ToolError) as exc_info:

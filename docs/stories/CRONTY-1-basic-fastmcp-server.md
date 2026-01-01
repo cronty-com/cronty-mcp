@@ -32,10 +32,8 @@ flowchart TD
 
 This story establishes the foundation for the Cronty MCP server. Before implementing scheduling features, we need a working FastMCP server that validates its configuration.
 
-The server requires four environment variables to function:
+The server requires two environment variables to function:
 - `QSTASH_TOKEN` - QStash API token for scheduling
-- `QSTASH_CURRENT_SIGNING_KEY` - Current signing key for webhook verification
-- `QSTASH_NEXT_SIGNING_KEY` - Next signing key for key rotation
 - `NTFY_TOPIC` - NTFY topic for notification delivery
 
 The health tool serves two purposes:
@@ -83,8 +81,6 @@ The server should:
 Given all required environment variables are set
   | Variable                     | Value          |
   | QSTASH_TOKEN                 | test-token     |
-  | QSTASH_CURRENT_SIGNING_KEY   | current-key    |
-  | QSTASH_NEXT_SIGNING_KEY      | next-key       |
   | NTFY_TOPIC                   | test-topic     |
 When the MCP server starts
 Then the server should initialize without errors
@@ -155,8 +151,6 @@ Create `.env.example` documenting required variables:
 
 ```env
 QSTASH_TOKEN=
-QSTASH_CURRENT_SIGNING_KEY=
-QSTASH_NEXT_SIGNING_KEY=
 NTFY_TOPIC=
 ```
 

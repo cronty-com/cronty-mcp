@@ -96,6 +96,4 @@ Use `/commit` command for AI-attributed commits.
 
 Required variables (validated at startup):
 - `QSTASH_TOKEN` - QStash API token
-- `QSTASH_CURRENT_SIGNING_KEY` - Webhook verification key
-- `QSTASH_NEXT_SIGNING_KEY` - Key rotation support
 - `NTFY_TOPIC` - Notification delivery topic

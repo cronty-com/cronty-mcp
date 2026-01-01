@@ -106,8 +106,6 @@ Users want AI agents that can:
 | Variable                     | Description                                       | Required |
 |------------------------------|---------------------------------------------------|----------|
 | `QSTASH_TOKEN`               | QStash API token                                  | Yes      |
-| `QSTASH_CURRENT_SIGNING_KEY` | Current signing key for webhook verification      | Yes      |
-| `QSTASH_NEXT_SIGNING_KEY`    | Next signing key for key rotation                 | Yes      |
 | `NTFY_TOPIC`                 | NTFY topic for notification delivery              | Yes      |
 | `QSTASH_PLAN_LEVEL`          | QStash plan: `free`, `pay-as-you-go`, `fixed-fee` | No (P1)  |
 
