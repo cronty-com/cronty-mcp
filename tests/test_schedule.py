@@ -191,3 +191,102 @@ class TestValidationErrors:
                 },
             )
         assert "multiple" in str(exc_info.value).lower()
+
+
+@pytest.fixture
+def mock_qstash_schedule():
+    with patch("services.qstash.QStash") as mock_class:
+        mock_client = MagicMock()
+        mock_client.schedule.create.return_value = "test-schedule-id-456"
+        mock_class.return_value = mock_client
+        yield mock_client
+
+
+class TestScheduleCronNotification:
+    async def test_success_with_cron_and_timezone(
+        self, client, mock_qstash_schedule, env_vars
+    ):
+        result = await client.call_tool(
+            "schedule_cron_notification",
+            {
+                "message": "Submit your timesheet",
+                "cron": "0 9 * * 1",
+                "timezone": "Europe/Warsaw",
+            },
+        )
+        result_str = str(result)
+        assert "test-schedule-id-456" in result_str
+        assert "CRON_TZ=Europe/Warsaw 0 9 * * 1" in result_str
+
+    async def test_success_with_weekday_cron(
+        self, client, mock_qstash_schedule, env_vars
+    ):
+        result = await client.call_tool(
+            "schedule_cron_notification",
+            {
+                "message": "Daily standup reminder",
+                "cron": "30 8 * * 1-5",
+                "timezone": "America/New_York",
+            },
+        )
+        result_str = str(result)
+        assert "test-schedule-id-456" in result_str
+        assert "CRON_TZ=America/New_York 30 8 * * 1-5" in result_str
+
+    async def test_success_with_optional_label(
+        self, client, mock_qstash_schedule, env_vars
+    ):
+        result = await client.call_tool(
+            "schedule_cron_notification",
+            {
+                "message": "Weekly report",
+                "cron": "0 9 * * 1",
+                "timezone": "UTC",
+                "label": "weekly-report",
+            },
+        )
+        result_str = str(result)
+        assert "test-schedule-id-456" in result_str
+        mock_qstash_schedule.schedule.create.assert_called_once()
+        call_kwargs = mock_qstash_schedule.schedule.create.call_args.kwargs
+        assert call_kwargs["label"] == "weekly-report"
+
+    async def test_invalid_cron_too_few_fields(
+        self, client, mock_qstash_schedule, env_vars
+    ):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_cron_notification",
+                {
+                    "message": "Test",
+                    "cron": "* * *",
+                    "timezone": "Europe/Warsaw",
+                },
+            )
+        assert "5 fields" in str(exc_info.value)
+
+    async def test_invalid_cron_too_many_fields(
+        self, client, mock_qstash_schedule, env_vars
+    ):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_cron_notification",
+                {
+                    "message": "Test",
+                    "cron": "0 9 * * 1 2024",
+                    "timezone": "Europe/Warsaw",
+                },
+            )
+        assert "5 fields" in str(exc_info.value)
+
+    async def test_invalid_timezone(self, client, mock_qstash_schedule, env_vars):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_cron_notification",
+                {
+                    "message": "Test",
+                    "cron": "0 9 * * 1",
+                    "timezone": "Invalid/Zone",
+                },
+            )
+        assert "invalid timezone" in str(exc_info.value).lower()

@@ -6,9 +6,13 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from fastmcp.exceptions import ToolError
 from pydantic import Field
 
-from services.qstash import schedule_message
+from services.qstash import create_schedule, schedule_message
 
 DELAY_PATTERN = r"^(\d+d)?(\d+h)?(\d+m)?(\d+s)?$"
+TIMEZONE_EXAMPLES = (
+    "Europe/Warsaw, Europe/London, America/New_York, America/Los_Angeles, "
+    "Asia/Tokyo, Asia/Shanghai, Australia/Sydney, UTC"
+)
 
 
 def schedule_notification(
@@ -30,7 +34,14 @@ def schedule_notification(
     ] = None,
     timezone: Annotated[
         str | None,
-        Field(description="IANA timezone (e.g., Europe/Warsaw)"),
+        Field(
+            description=(
+                "IANA timezone (required with date+time). "
+                "Check the user's system timezone first. "
+                "If unavailable, ask the user for their timezone. "
+                f"Examples: {TIMEZONE_EXAMPLES}"
+            )
+        ),
     ] = None,
     delay: Annotated[
         str | None,
@@ -191,3 +202,80 @@ def _schedule_with_delay(message: str, delay: str) -> dict:
         "delay": delay,
         "confirmation": f"Notification scheduled with delay: {delay}",
     }
+
+
+def schedule_cron_notification(
+    message: Annotated[str, Field(description="The notification text to send")],
+    cron: Annotated[
+        str,
+        Field(
+            description=(
+                "Standard 5-field cron expression. "
+                "Fields: minute hour day-of-month month day-of-week. "
+                "Examples: '0 9 * * 1' (Mondays 9am), "
+                "'30 8 * * 1-5' (weekdays 8:30am), '0 0 1 * *' (monthly)"
+            )
+        ),
+    ],
+    timezone: Annotated[
+        str,
+        Field(
+            description=(
+                "IANA timezone for the cron schedule. "
+                "Check the user's system timezone first. "
+                "If unavailable, ask the user for their timezone. "
+                f"Examples: {TIMEZONE_EXAMPLES}"
+            )
+        ),
+    ],
+    label: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Optional label for identifying this schedule "
+                "in the Upstash dashboard logs"
+            )
+        ),
+    ] = None,
+) -> dict:
+    """Schedule a recurring notification using cron syntax.
+
+    Creates a persistent schedule that fires according to the cron pattern.
+    The schedule continues indefinitely until deleted via the Upstash panel.
+
+    The agent should determine the user's timezone by:
+    1. Checking system/environment timezone information
+    2. If unavailable, asking the user explicitly
+    """
+    _validate_cron(cron)
+    _validate_timezone(timezone)
+
+    cron_with_tz = f"CRON_TZ={timezone} {cron}"
+    schedule_id = create_schedule(message, cron_with_tz, label=label)
+
+    return {
+        "success": True,
+        "schedule_id": schedule_id,
+        "cron": cron_with_tz,
+        "confirmation": f"Cron schedule created: {cron_with_tz}",
+    }
+
+
+def _validate_cron(cron: str) -> None:
+    fields = cron.strip().split()
+    if len(fields) != 5:
+        raise ToolError(
+            f"Invalid cron expression: '{cron}'. "
+            "Cron requires exactly 5 fields: minute hour day-of-month month "
+            "day-of-week. Examples: '0 9 * * 1', '30 8 * * 1-5', '0 0 1 * *'"
+        )
+
+
+def _validate_timezone(timezone: str) -> None:
+    try:
+        ZoneInfo(timezone)
+    except ZoneInfoNotFoundError:
+        raise ToolError(
+            f"Invalid timezone: '{timezone}'. "
+            f"Use IANA timezone format. Examples: {TIMEZONE_EXAMPLES}"
+        )

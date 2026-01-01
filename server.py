@@ -1,13 +1,19 @@
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 
-from tools import health, schedule_notification, send_push_notification
+from tools import (
+    health,
+    schedule_cron_notification,
+    schedule_notification,
+    send_push_notification,
+)
 
 load_dotenv()
 
 mcp = FastMCP("Cronty MCP")
 
 mcp.tool(health)
+mcp.tool(schedule_cron_notification)
 mcp.tool(schedule_notification)
 mcp.tool(send_push_notification)
 

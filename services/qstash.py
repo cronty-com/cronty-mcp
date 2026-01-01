@@ -42,3 +42,36 @@ def schedule_message(
     response = client.message.publish_json(**kwargs)
 
     return response.message_id
+
+
+def create_schedule(
+    message: str,
+    cron: str,
+    label: str | None = None,
+) -> str:
+    """Create a recurring schedule to send messages to NTFY via QStash.
+
+    Args:
+        message: The notification text to send.
+        cron: Cron expression with CRON_TZ prefix.
+        label: Optional label for filtering logs in Upstash dashboard.
+
+    Returns:
+        The QStash schedule ID.
+    """
+    client = QStash(token=os.environ["QSTASH_TOKEN"])
+    ntfy_topic = os.environ["NTFY_TOPIC"]
+    destination = f"https://ntfy.sh/{ntfy_topic}"
+
+    kwargs: dict = {
+        "destination": destination,
+        "cron": cron,
+        "body": message,
+    }
+
+    if label is not None:
+        kwargs["label"] = label
+
+    schedule_id = client.schedule.create(**kwargs)
+
+    return schedule_id
