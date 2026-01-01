@@ -232,8 +232,9 @@ def schedule_cron_notification(
         str | None,
         Field(
             description=(
-                "Optional label for identifying this schedule "
-                "in the Upstash dashboard logs"
+                "Optional label for identifying this schedule in the Upstash "
+                "dashboard logs. Only alphanumeric, hyphen, underscore, or period "
+                "allowed. Examples: 'daily-standup', 'weekly_report', 'reminder.v1'"
             )
         ),
     ] = None,
@@ -249,6 +250,8 @@ def schedule_cron_notification(
     """
     _validate_cron(cron)
     _validate_timezone(timezone)
+    if label is not None:
+        _validate_label(label)
 
     cron_with_tz = f"CRON_TZ={timezone} {cron}"
     schedule_id = create_schedule(message, cron_with_tz, label=label)
@@ -278,4 +281,13 @@ def _validate_timezone(timezone: str) -> None:
         raise ToolError(
             f"Invalid timezone: '{timezone}'. "
             f"Use IANA timezone format. Examples: {TIMEZONE_EXAMPLES}"
+        )
+
+
+def _validate_label(label: str) -> None:
+    if not re.match(r"^[a-zA-Z0-9._-]+$", label):
+        raise ToolError(
+            f"Invalid label: '{label}'. "
+            "Only alphanumeric characters, hyphens, underscores, and periods "
+            "are allowed. Examples: 'daily-standup', 'weekly_report', 'reminder.v1'"
         )

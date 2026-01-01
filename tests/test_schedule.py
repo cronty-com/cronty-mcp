@@ -290,3 +290,34 @@ class TestScheduleCronNotification:
                 },
             )
         assert "invalid timezone" in str(exc_info.value).lower()
+
+    async def test_invalid_label_with_spaces(
+        self, client, mock_qstash_schedule, env_vars
+    ):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_cron_notification",
+                {
+                    "message": "Test",
+                    "cron": "0 9 * * 1",
+                    "timezone": "Europe/Warsaw",
+                    "label": "my label with spaces",
+                },
+            )
+        assert "invalid label" in str(exc_info.value).lower()
+        assert "alphanumeric" in str(exc_info.value).lower()
+
+    async def test_invalid_label_with_special_chars(
+        self, client, mock_qstash_schedule, env_vars
+    ):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_cron_notification",
+                {
+                    "message": "Test",
+                    "cron": "0 9 * * 1",
+                    "timezone": "Europe/Warsaw",
+                    "label": "reminder (daily)",
+                },
+            )
+        assert "invalid label" in str(exc_info.value).lower()
