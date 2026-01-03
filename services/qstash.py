@@ -39,7 +39,7 @@ def schedule_message(
     else:
         kwargs["delay"] = delay
 
-    response = client.message.publish_json(**kwargs)
+    response = client.message.publish(**kwargs)
 
     return response.message_id
 

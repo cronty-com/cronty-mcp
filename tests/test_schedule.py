@@ -20,7 +20,7 @@ def mock_qstash():
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.message_id = "test-message-id-123"
-        mock_client.message.publish_json.return_value = mock_response
+        mock_client.message.publish.return_value = mock_response
         mock_class.return_value = mock_client
         yield mock_client
 
