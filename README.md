@@ -45,6 +45,12 @@ Edit `.env` with your credentials:
 ```bash
 QSTASH_TOKEN=your_qstash_token_here
 NTFY_TOPIC=your_ntfy_topic_here
+
+# For local development without auth:
+AUTH_DISABLED=true
+
+# Or for production with auth:
+# JWT_SECRET=your_secret_here  # Generate with: openssl rand -base64 48
 ```
 
 ### 3. Run the Server
@@ -59,9 +65,57 @@ For development with the MCP Inspector:
 uv run fastmcp dev server.py
 ```
 
+## Authentication
+
+Cronty MCP supports bearer token authentication using JWT tokens signed with HS512.
+
+### Generating a JWT Secret
+
+Generate a secure secret (minimum 64 characters):
+
+```bash
+# macOS/Linux
+openssl rand -base64 48
+
+# Or using Python
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Add the secret to your `.env`:
+
+```bash
+JWT_SECRET=your_generated_secret_here
+```
+
+### Issuing Tokens
+
+Issue tokens for users via CLI:
+
+```bash
+uv run python -m cronty token issue --email user@example.com
+```
+
+With custom expiration:
+
+```bash
+uv run python -m cronty token issue --email user@example.com --expires-in 30d
+```
+
+Supported duration formats: `30d`, `12h`, `1y`, `365d`
+
+### Disabling Authentication
+
+For local development, disable auth by setting:
+
+```bash
+AUTH_DISABLED=true
+```
+
 ## Agent Configuration (Local Mode)
 
 Configure your AI agent to connect to the local MCP server.
+
+**Note:** These configurations run the server locally with `AUTH_DISABLED=true` for development.
 
 ### Claude Code
 
@@ -165,9 +219,30 @@ gemini mcp add cronty-mcp -- uv run fastmcp run server.py
 
 ## FastMCP Cloud Deployment
 
-When deployed to [FastMCP Cloud](https://fastmcp.cloud), you can connect to your server using these configurations.
+When deployed to [FastMCP Cloud](https://fastmcp.cloud), you can connect to your server using bearer token authentication.
 
 Replace `your-hostname` with your actual FastMCP Cloud hostname (e.g., `your-app-name.fastmcp.app`).
+
+### Issuing Tokens for Cloud Users
+
+Before connecting, issue a token for each user:
+
+```bash
+uv run python -m cronty token issue --email user@example.com
+```
+
+Users will need this token to authenticate with the cloud-deployed server.
+
+### Obsidian
+
+In the Obsidian MCP plugin settings, add a new server:
+
+| Field | Value |
+|-------|-------|
+| Server name | Cronty |
+| Server URL | `https://your-hostname.fastmcp.app/mcp` |
+| Authentication | Bearer Token |
+| Token | (paste token from CLI) |
 
 ### Claude Code
 
@@ -226,8 +301,12 @@ code --add-mcp '{"name":"cronty-mcp","type":"http","url":"https://your-hostname.
 ```python
 import asyncio
 from fastmcp import Client
+from fastmcp.client.auth import BearerAuth
 
-client = Client("https://your-hostname.fastmcp.app/mcp")
+client = Client(
+    "https://your-hostname.fastmcp.app/mcp",
+    auth=BearerAuth("your-token-here")
+)
 
 async def main():
     async with client:

@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 
+from config import get_jwt_secret, is_auth_disabled
 from tools import (
     health,
     schedule_cron_notification,
@@ -10,7 +11,25 @@ from tools import (
 
 load_dotenv()
 
-mcp = FastMCP("Cronty MCP")
+
+def create_auth():
+    if is_auth_disabled():
+        return None
+
+    from fastmcp.server.auth.providers.jwt import JWTVerifier
+
+    secret = get_jwt_secret()
+    if not secret:
+        raise ValueError("JWT_SECRET is required when authentication is enabled")
+
+    return JWTVerifier(
+        public_key=secret,
+        issuer="cronty-mcp",
+        algorithm="HS512",
+    )
+
+
+mcp = FastMCP("Cronty MCP", auth=create_auth())
 
 mcp.tool(health)
 mcp.tool(schedule_cron_notification)
