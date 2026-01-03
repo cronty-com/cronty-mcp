@@ -223,6 +223,16 @@ When deployed to [FastMCP Cloud](https://fastmcp.cloud), you can connect to your
 
 Replace `your-hostname` with your actual FastMCP Cloud hostname (e.g., `your-app-name.fastmcp.app`).
 
+> **Note:** Bearer token authentication is a temporary solution for clients that don't yet support OAuth 2.0 Dynamic Client Registration (DCR). OAuth with DCR support via WorkOS/Authkit is planned as the preferred authentication method.
+
+### Environment Setup
+
+Set your bearer token as an environment variable:
+
+```bash
+export CRONTY_TOKEN="your-token-here"
+```
+
 ### Issuing Tokens for Cloud Users
 
 Before connecting, issue a token for each user:
@@ -246,55 +256,137 @@ In the Obsidian MCP plugin settings, add a new server:
 
 ### Claude Code
 
-```bash
-claude mcp add --scope local --transport http cronty-mcp https://your-hostname.fastmcp.app/mcp
-```
-
-### Claude Desktop
-
-Use the DXT manifest URL:
-
-```
-https://your-hostname.fastmcp.app/manifest.dxt
-```
-
-### Codex CLI
+Using CLI:
 
 ```bash
-codex mcp add --url https://your-hostname.fastmcp.app/mcp cronty-mcp
+claude mcp add --transport http cronty-mcp https://your-hostname.fastmcp.app/mcp \
+  --header "Authorization: Bearer ${CRONTY_TOKEN}"
 ```
 
-### Gemini CLI
-
-```bash
-gemini mcp add cronty-mcp https://your-hostname.fastmcp.app/mcp --transport http
-```
-
-### Cursor
-
-Use this deeplink (replace the hostname in the base64-encoded config):
-
-```
-cursor://anysphere.cursor-deeplink/mcp/install?name=cronty-mcp&config=<base64-encoded-config>
-```
-
-Or add manually to `.cursor/mcp.json`:
+Or add to `.mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "cronty-mcp": {
-      "url": "https://your-hostname.fastmcp.app/mcp"
+      "type": "http",
+      "url": "https://your-hostname.fastmcp.app/mcp",
+      "headers": {
+        "Authorization": "Bearer ${CRONTY_TOKEN}"
+      }
     }
   }
 }
 ```
 
-### VS Code
+### Claude Desktop
+
+Claude Desktop requires the `mcp-remote` wrapper to add custom headers. Add to `claude_desktop_config.json`:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "cronty-mcp": {
+      "command": "npx",
+      "args": [
+        "mcp-remote@latest",
+        "https://your-hostname.fastmcp.app/mcp",
+        "--header",
+        "Authorization: Bearer YOUR_TOKEN"
+      ]
+    }
+  }
+}
+```
+
+Replace `YOUR_TOKEN` with your actual token from the CLI.
+
+### Codex CLI
+
+Edit `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.cronty-mcp]
+url = "https://your-hostname.fastmcp.app/mcp"
+bearer_token_env_var = "CRONTY_TOKEN"
+```
+
+Then set the environment variable before running Codex.
+
+### Gemini CLI
+
+Using CLI:
 
 ```bash
-code --add-mcp '{"name":"cronty-mcp","type":"http","url":"https://your-hostname.fastmcp.app/mcp"}'
+gemini mcp add cronty-mcp https://your-hostname.fastmcp.app/mcp \
+  --transport http \
+  --header "Authorization: Bearer ${CRONTY_TOKEN}"
 ```
+
+Or edit `settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "cronty-mcp": {
+      "httpUrl": "https://your-hostname.fastmcp.app/mcp",
+      "headers": {
+        "Authorization": "Bearer ${CRONTY_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+### Cursor
+
+Add to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "cronty-mcp": {
+      "url": "https://your-hostname.fastmcp.app/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:CRONTY_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+Note: Cursor uses `${env:VAR}` syntax for environment variables.
+
+### VS Code
+
+Add to `.vscode/mcp.json`:
+
+```json
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "cronty-token",
+      "description": "Cronty MCP Bearer Token",
+      "password": true
+    }
+  ],
+  "servers": {
+    "cronty-mcp": {
+      "type": "http",
+      "url": "https://your-hostname.fastmcp.app/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:cronty-token}"
+      }
+    }
+  }
+}
+```
+
+VS Code will securely prompt for your token on first use.
 
 ### FastMCP Python Client
 
@@ -326,6 +418,7 @@ asyncio.run(main())
 ### OpenAI SDK
 
 ```python
+import os
 from openai import OpenAI
 
 client = OpenAI()
@@ -337,12 +430,25 @@ resp = client.responses.create(
             "type": "mcp",
             "server_label": "cronty-mcp",
             "server_url": "https://your-hostname.fastmcp.app/mcp",
+            "headers": {
+                "Authorization": f"Bearer {os.environ['CRONTY_TOKEN']}"
+            },
             "require_approval": "never",
         },
     ],
     input="Send me a test notification",
 )
 ```
+
+### OAuth Authentication (Coming Soon)
+
+OAuth 2.0 with Dynamic Client Registration (DCR) support via WorkOS/Authkit is planned. This will enable:
+
+- Automatic token refresh
+- Secure authorization flows
+- No manual token management
+
+Clients with native OAuth DCR support (Claude Code, VS Code, Cursor) will be able to authenticate without bearer tokens once implemented.
 
 ## Development
 
@@ -365,6 +471,57 @@ uv run ruff check .
 uv run ruff check . --fix
 uv run ruff format .
 ```
+
+### Testing with Claude Code
+
+#### Local Mode (stdio)
+
+For local development, use stdio transport with auth disabled. Set in `.env`:
+
+```bash
+AUTH_DISABLED=true
+```
+
+The repo includes `.mcp.json` for local testing:
+
+```json
+{
+  "mcpServers": {
+    "cronty-mcp": {
+      "command": "uv",
+      "args": ["run", "fastmcp", "run", "server.py"]
+    }
+  }
+}
+```
+
+Then run Claude Code from this directory - it will automatically detect the MCP server.
+
+#### Cloud Mode (HTTP with bearer token)
+
+To test against FastMCP Cloud deployment:
+
+1. Set your token:
+   ```bash
+   export CRONTY_TOKEN="your-token-here"
+   ```
+
+2. Update `.mcp.json` to use HTTP transport:
+   ```json
+   {
+     "mcpServers": {
+       "cronty-mcp": {
+         "type": "http",
+         "url": "https://your-hostname.fastmcp.app/mcp",
+         "headers": {
+           "Authorization": "Bearer ${CRONTY_TOKEN}"
+         }
+       }
+     }
+   }
+   ```
+
+3. Run Claude Code with the env var set.
 
 ## License
 
