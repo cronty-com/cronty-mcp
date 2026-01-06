@@ -1,11 +1,11 @@
 import json
-import os
 
 import httpx
 
 
 async def send_notification(
     message: str,
+    topic: str,
     title: str | None = None,
     priority: int | None = None,
     tags: list[str] | None = None,
@@ -16,7 +16,6 @@ async def send_notification(
     filename: str | None = None,
     actions: list[dict] | None = None,
 ) -> dict:
-    topic = os.environ["NTFY_TOPIC"]
     payload: dict = {"topic": topic, "message": message}
 
     if title is not None:

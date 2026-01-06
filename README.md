@@ -22,7 +22,7 @@ A FastMCP server that enables AI agents to schedule notifications and reminders 
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) package manager
 - [Upstash QStash](https://console.upstash.com/qstash) account and token
-- [NTFY](https://ntfy.sh/) topic for receiving notifications
+- [NTFY](https://ntfy.sh/) topic for receiving notifications (passed as `notification_topic` parameter to each tool)
 
 ## Quickstart
 
@@ -44,7 +44,6 @@ Edit `.env` with your credentials:
 
 ```bash
 QSTASH_TOKEN=your_qstash_token_here
-NTFY_TOPIC=your_ntfy_topic_here
 
 # For local development without auth:
 AUTH_DISABLED=true
@@ -52,6 +51,8 @@ AUTH_DISABLED=true
 # Or for production with auth:
 # JWT_SECRET=your_secret_here  # Generate with: openssl rand -base64 48
 ```
+
+Note: The NTFY topic is now specified per-request via the `notification_topic` parameter on each tool call, enabling multi-user and multi-tenant deployments.
 
 ### 3. Run the Server
 

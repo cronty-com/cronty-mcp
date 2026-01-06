@@ -13,10 +13,20 @@ TIMEZONE_EXAMPLES = (
     "Europe/Warsaw, Europe/London, America/New_York, America/Los_Angeles, "
     "Asia/Tokyo, Asia/Shanghai, Australia/Sydney, UTC"
 )
+TOPIC_PATTERN = r"^[a-z0-9]+(-[a-z0-9]+)*$"
+TOPIC_DESCRIPTION = (
+    "The notification topic to send to. "
+    "Format: lowercase alphanumeric with dashes "
+    "(e.g., 'my-alerts', 'user-123-notifications')"
+)
 
 
 def schedule_notification(
     message: Annotated[str, Field(description="The notification text to send")],
+    notification_topic: Annotated[
+        str,
+        Field(description=TOPIC_DESCRIPTION, pattern=TOPIC_PATTERN),
+    ],
     datetime_iso: Annotated[
         str | None,
         Field(
@@ -60,14 +70,18 @@ def schedule_notification(
     if mode == "datetime":
         not_before = _parse_iso_datetime(datetime_iso)
         scheduled_time = datetime_iso
-        return _schedule_with_not_before(message, not_before, scheduled_time)
+        return _schedule_with_not_before(
+            message, notification_topic, not_before, scheduled_time
+        )
 
     elif mode == "separate":
         not_before, scheduled_time = _parse_separate_params(date, time, timezone)
-        return _schedule_with_not_before(message, not_before, scheduled_time)
+        return _schedule_with_not_before(
+            message, notification_topic, not_before, scheduled_time
+        )
 
     else:
-        return _schedule_with_delay(message, delay)
+        return _schedule_with_delay(message, notification_topic, delay)
 
 
 def _determine_scheduling_mode(
@@ -137,9 +151,7 @@ def _parse_iso_datetime(datetime_str: str) -> int:
     return int(dt.timestamp())
 
 
-def _parse_separate_params(
-    date: str, time: str, timezone: str
-) -> tuple[int, str]:
+def _parse_separate_params(date: str, time: str, timezone: str) -> tuple[int, str]:
     try:
         tz_info = ZoneInfo(timezone)
     except ZoneInfoNotFoundError:
@@ -182,9 +194,9 @@ def _validate_delay_format(delay: str) -> None:
 
 
 def _schedule_with_not_before(
-    message: str, not_before: int, scheduled_time: str
+    message: str, topic: str, not_before: int, scheduled_time: str
 ) -> dict:
-    message_id = schedule_message(message, not_before=not_before)
+    message_id = schedule_message(message, topic, not_before=not_before)
     return {
         "success": True,
         "message_id": message_id,
@@ -193,9 +205,9 @@ def _schedule_with_not_before(
     }
 
 
-def _schedule_with_delay(message: str, delay: str) -> dict:
+def _schedule_with_delay(message: str, topic: str, delay: str) -> dict:
     _validate_delay_format(delay)
-    message_id = schedule_message(message, delay=delay)
+    message_id = schedule_message(message, topic, delay=delay)
     return {
         "success": True,
         "message_id": message_id,
@@ -206,6 +218,10 @@ def _schedule_with_delay(message: str, delay: str) -> dict:
 
 def schedule_cron_notification(
     message: Annotated[str, Field(description="The notification text to send")],
+    notification_topic: Annotated[
+        str,
+        Field(description=TOPIC_DESCRIPTION, pattern=TOPIC_PATTERN),
+    ],
     cron: Annotated[
         str,
         Field(
@@ -254,7 +270,9 @@ def schedule_cron_notification(
         _validate_label(label)
 
     cron_with_tz = f"CRON_TZ={timezone} {cron}"
-    schedule_id = create_schedule(message, cron_with_tz, label=label)
+    schedule_id = create_schedule(
+        message, notification_topic, cron_with_tz, label=label
+    )
 
     return {
         "success": True,

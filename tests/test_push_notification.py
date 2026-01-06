@@ -38,14 +38,13 @@ def mock_ntfy():
 @pytest.fixture
 def env_vars(monkeypatch):
     monkeypatch.setenv("QSTASH_TOKEN", "test-token")
-    monkeypatch.setenv("NTFY_TOPIC", "test-topic")
 
 
 class TestSendPushNotificationSuccess:
     async def test_simple_message_only(self, client, mock_ntfy, env_vars):
         result = await client.call_tool(
             "send_push_notification",
-            {"message": "Build completed"},
+            {"message": "Build completed", "notification_topic": "test-topic"},
         )
         result_str = str(result)
         assert "success" in result_str.lower()
@@ -54,7 +53,11 @@ class TestSendPushNotificationSuccess:
     async def test_message_with_title(self, client, mock_ntfy, env_vars):
         result = await client.call_tool(
             "send_push_notification",
-            {"message": "All tests passed", "title": "CI Pipeline"},
+            {
+                "message": "All tests passed",
+                "notification_topic": "test-topic",
+                "title": "CI Pipeline",
+            },
         )
         result_str = str(result)
         assert "success" in result_str.lower()
@@ -68,6 +71,7 @@ class TestSendPushNotificationSuccess:
             "send_push_notification",
             {
                 "message": "Server is unresponsive",
+                "notification_topic": "test-topic",
                 "title": "Alert",
                 "priority": 5,
                 "tags": ["warning", "skull"],
@@ -85,6 +89,7 @@ class TestSendPushNotificationSuccess:
             "send_push_notification",
             {
                 "message": "New deployment ready",
+                "notification_topic": "test-topic",
                 "click": "https://dashboard.example.com",
             },
         )
@@ -104,7 +109,11 @@ class TestSendPushNotificationSuccess:
         ]
         result = await client.call_tool(
             "send_push_notification",
-            {"message": "PR #123 needs review", "actions": actions},
+            {
+                "message": "PR #123 needs review",
+                "notification_topic": "test-topic",
+                "actions": actions,
+            },
         )
         result_str = str(result)
         assert "success" in result_str.lower()
@@ -117,6 +126,7 @@ class TestSendPushNotificationSuccess:
             "send_push_notification",
             {
                 "message": "**Build failed** for `main` branch",
+                "notification_topic": "test-topic",
                 "markdown": True,
             },
         )
@@ -131,6 +141,7 @@ class TestSendPushNotificationSuccess:
             "send_push_notification",
             {
                 "message": "Screenshot of the error",
+                "notification_topic": "test-topic",
                 "attach": "https://example.com/screenshot.png",
                 "filename": "error.png",
             },
@@ -147,6 +158,7 @@ class TestSendPushNotificationSuccess:
             "send_push_notification",
             {
                 "message": "Deployment successful",
+                "notification_topic": "test-topic",
                 "icon": "https://example.com/deploy-icon.png",
             },
         )
@@ -162,6 +174,7 @@ class TestSendPushNotificationSuccess:
             "send_push_notification",
             {
                 "message": "**Full featured** notification test",
+                "notification_topic": "test-topic",
                 "title": "Complete Test",
                 "priority": 4,
                 "tags": ["white_check_mark", "test"],
@@ -186,8 +199,55 @@ class TestSendPushNotificationSuccess:
         assert payload["actions"] == actions
 
 
+class TestSendPushNotificationTopicValidation:
+    async def test_invalid_topic_with_uppercase(self, client, mock_ntfy, env_vars):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "send_push_notification",
+                {"message": "Test", "notification_topic": "My-Topic"},
+            )
+        assert "notification_topic" in str(exc_info.value)
+        assert "pattern" in str(exc_info.value).lower()
+
+    async def test_invalid_topic_with_spaces(self, client, mock_ntfy, env_vars):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "send_push_notification",
+                {"message": "Test", "notification_topic": "my topic"},
+            )
+        assert "notification_topic" in str(exc_info.value)
+        assert "pattern" in str(exc_info.value).lower()
+
+    async def test_invalid_topic_with_special_chars(self, client, mock_ntfy, env_vars):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "send_push_notification",
+                {"message": "Test", "notification_topic": "my_topic!"},
+            )
+        assert "notification_topic" in str(exc_info.value)
+        assert "pattern" in str(exc_info.value).lower()
+
+    async def test_invalid_topic_starting_with_dash(self, client, mock_ntfy, env_vars):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "send_push_notification",
+                {"message": "Test", "notification_topic": "-my-topic"},
+            )
+        assert "notification_topic" in str(exc_info.value)
+        assert "pattern" in str(exc_info.value).lower()
+
+    async def test_invalid_topic_ending_with_dash(self, client, mock_ntfy, env_vars):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "send_push_notification",
+                {"message": "Test", "notification_topic": "my-topic-"},
+            )
+        assert "notification_topic" in str(exc_info.value)
+        assert "pattern" in str(exc_info.value).lower()
+
+
 class TestSendPushNotificationErrors:
-    async def test_ntfy_connection_error(self, client, env_vars):
+    async def test_connection_error(self, client, env_vars):
         with patch("services.ntfy.httpx.AsyncClient") as mock_class:
             mock_client = AsyncMock()
             mock_client.post.side_effect = httpx.ConnectError("Connection refused")
@@ -198,11 +258,11 @@ class TestSendPushNotificationErrors:
             with pytest.raises(ToolError) as exc_info:
                 await client.call_tool(
                     "send_push_notification",
-                    {"message": "Test"},
+                    {"message": "Test", "notification_topic": "test-topic"},
                 )
             assert "connect" in str(exc_info.value).lower()
 
-    async def test_ntfy_http_error(self, client, env_vars):
+    async def test_http_error(self, client, env_vars):
         with patch("services.ntfy.httpx.AsyncClient") as mock_class:
             mock_client = AsyncMock()
             mock_response = MagicMock()
@@ -221,6 +281,6 @@ class TestSendPushNotificationErrors:
             with pytest.raises(ToolError) as exc_info:
                 await client.call_tool(
                     "send_push_notification",
-                    {"message": "Test"},
+                    {"message": "Test", "notification_topic": "test-topic"},
                 )
             assert "500" in str(exc_info.value)

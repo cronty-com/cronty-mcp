@@ -62,8 +62,7 @@ def parse_duration(duration: str) -> timedelta:
 
     if not match:
         raise ValueError(
-            f"Invalid duration format: {duration}. "
-            "Valid examples: 30d, 12h, 1y, 365d"
+            f"Invalid duration format: {duration}. Valid examples: 30d, 12h, 1y, 365d"
         )
 
     value = int(match.group(1))

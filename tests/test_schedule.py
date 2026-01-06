@@ -28,7 +28,6 @@ def mock_qstash():
 @pytest.fixture
 def env_vars(monkeypatch):
     monkeypatch.setenv("QSTASH_TOKEN", "test-token")
-    monkeypatch.setenv("NTFY_TOPIC", "test-topic")
 
 
 def future_datetime_iso() -> str:
@@ -51,7 +50,11 @@ class TestScheduleWithDatetime:
         future_dt = future_datetime_iso()
         result = await client.call_tool(
             "schedule_notification",
-            {"message": "Call mom", "datetime": future_dt},
+            {
+                "message": "Call mom",
+                "notification_topic": "test-topic",
+                "datetime": future_dt,
+            },
         )
         result_str = str(result)
         assert "test-message-id-123" in result_str
@@ -62,7 +65,11 @@ class TestScheduleWithDatetime:
         with pytest.raises(ToolError) as exc_info:
             await client.call_tool(
                 "schedule_notification",
-                {"message": "Too late", "datetime": past_dt},
+                {
+                    "message": "Too late",
+                    "notification_topic": "test-topic",
+                    "datetime": past_dt,
+                },
             )
         assert "future" in str(exc_info.value).lower()
 
@@ -70,7 +77,11 @@ class TestScheduleWithDatetime:
         with pytest.raises(ToolError) as exc_info:
             await client.call_tool(
                 "schedule_notification",
-                {"message": "Test", "datetime": "not-a-datetime"},
+                {
+                    "message": "Test",
+                    "notification_topic": "test-topic",
+                    "datetime": "not-a-datetime",
+                },
             )
         assert "invalid" in str(exc_info.value).lower()
 
@@ -78,20 +89,23 @@ class TestScheduleWithDatetime:
         with pytest.raises(ToolError) as exc_info:
             await client.call_tool(
                 "schedule_notification",
-                {"message": "Test", "datetime": "2025-12-31T09:00:00"},
+                {
+                    "message": "Test",
+                    "notification_topic": "test-topic",
+                    "datetime": "2025-12-31T09:00:00",
+                },
             )
         assert "timezone" in str(exc_info.value).lower()
 
 
 class TestScheduleWithSeparateParams:
-    async def test_success_with_date_time_timezone(
-        self, client, mock_qstash, env_vars
-    ):
+    async def test_success_with_date_time_timezone(self, client, mock_qstash, env_vars):
         future = future_date()
         result = await client.call_tool(
             "schedule_notification",
             {
                 "message": "Team standup",
+                "notification_topic": "test-topic",
                 "date": future,
                 "time": "09:00",
                 "timezone": "Europe/Warsaw",
@@ -105,7 +119,12 @@ class TestScheduleWithSeparateParams:
         with pytest.raises(ToolError) as exc_info:
             await client.call_tool(
                 "schedule_notification",
-                {"message": "Test", "date": future, "time": "09:00"},
+                {
+                    "message": "Test",
+                    "notification_topic": "test-topic",
+                    "date": future,
+                    "time": "09:00",
+                },
             )
         assert "timezone" in str(exc_info.value).lower()
 
@@ -114,7 +133,12 @@ class TestScheduleWithSeparateParams:
         with pytest.raises(ToolError) as exc_info:
             await client.call_tool(
                 "schedule_notification",
-                {"message": "Test", "date": future, "timezone": "Europe/Warsaw"},
+                {
+                    "message": "Test",
+                    "notification_topic": "test-topic",
+                    "date": future,
+                    "timezone": "Europe/Warsaw",
+                },
             )
         assert "time" in str(exc_info.value).lower()
 
@@ -125,6 +149,7 @@ class TestScheduleWithSeparateParams:
                 "schedule_notification",
                 {
                     "message": "Test",
+                    "notification_topic": "test-topic",
                     "date": future,
                     "time": "09:00",
                     "timezone": "Not/A/Timezone",
@@ -137,7 +162,7 @@ class TestScheduleWithDelay:
     async def test_success_with_delay_days(self, client, mock_qstash, env_vars):
         result = await client.call_tool(
             "schedule_notification",
-            {"message": "Follow up", "delay": "3d"},
+            {"message": "Follow up", "notification_topic": "test-topic", "delay": "3d"},
         )
         result_str = str(result)
         assert "test-message-id-123" in result_str
@@ -145,7 +170,11 @@ class TestScheduleWithDelay:
     async def test_success_with_delay_combined(self, client, mock_qstash, env_vars):
         result = await client.call_tool(
             "schedule_notification",
-            {"message": "Check progress", "delay": "1d10h30m"},
+            {
+                "message": "Check progress",
+                "notification_topic": "test-topic",
+                "delay": "1d10h30m",
+            },
         )
         result_str = str(result)
         assert "test-message-id-123" in result_str
@@ -153,7 +182,11 @@ class TestScheduleWithDelay:
     async def test_success_with_delay_seconds(self, client, mock_qstash, env_vars):
         result = await client.call_tool(
             "schedule_notification",
-            {"message": "Quick reminder", "delay": "50s"},
+            {
+                "message": "Quick reminder",
+                "notification_topic": "test-topic",
+                "delay": "50s",
+            },
         )
         result_str = str(result)
         assert "test-message-id-123" in result_str
@@ -164,7 +197,7 @@ class TestValidationErrors:
         with pytest.raises(ToolError) as exc_info:
             await client.call_tool(
                 "schedule_notification",
-                {"message": "Test"},
+                {"message": "Test", "notification_topic": "test-topic"},
             )
         assert "no scheduling" in str(exc_info.value).lower()
 
@@ -173,7 +206,12 @@ class TestValidationErrors:
         with pytest.raises(ToolError) as exc_info:
             await client.call_tool(
                 "schedule_notification",
-                {"message": "Test", "datetime": future_dt, "delay": "3d"},
+                {
+                    "message": "Test",
+                    "notification_topic": "test-topic",
+                    "datetime": future_dt,
+                    "delay": "3d",
+                },
             )
         assert "multiple" in str(exc_info.value).lower()
 
@@ -184,6 +222,7 @@ class TestValidationErrors:
                 "schedule_notification",
                 {
                     "message": "Test",
+                    "notification_topic": "test-topic",
                     "date": future,
                     "time": "09:00",
                     "timezone": "UTC",
@@ -191,6 +230,62 @@ class TestValidationErrors:
                 },
             )
         assert "multiple" in str(exc_info.value).lower()
+
+
+class TestNotificationTopicValidation:
+    async def test_schedule_notification_invalid_topic_uppercase(
+        self, client, mock_qstash, env_vars
+    ):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_notification",
+                {"message": "Test", "notification_topic": "My-Topic", "delay": "1h"},
+            )
+        assert "notification_topic" in str(exc_info.value)
+        assert "pattern" in str(exc_info.value).lower()
+
+    async def test_schedule_notification_invalid_topic_special_chars(
+        self, client, mock_qstash, env_vars
+    ):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_notification",
+                {"message": "Test", "notification_topic": "my_topic!", "delay": "1h"},
+            )
+        assert "notification_topic" in str(exc_info.value)
+        assert "pattern" in str(exc_info.value).lower()
+
+    async def test_schedule_cron_invalid_topic_uppercase(
+        self, client, mock_qstash, env_vars
+    ):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_cron_notification",
+                {
+                    "message": "Test",
+                    "notification_topic": "My-Topic",
+                    "cron": "0 9 * * 1",
+                    "timezone": "UTC",
+                },
+            )
+        assert "notification_topic" in str(exc_info.value)
+        assert "pattern" in str(exc_info.value).lower()
+
+    async def test_schedule_cron_invalid_topic_leading_dash(
+        self, client, mock_qstash, env_vars
+    ):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_cron_notification",
+                {
+                    "message": "Test",
+                    "notification_topic": "-my-topic",
+                    "cron": "0 9 * * 1",
+                    "timezone": "UTC",
+                },
+            )
+        assert "notification_topic" in str(exc_info.value)
+        assert "pattern" in str(exc_info.value).lower()
 
 
 @pytest.fixture
@@ -210,6 +305,7 @@ class TestScheduleCronNotification:
             "schedule_cron_notification",
             {
                 "message": "Submit your timesheet",
+                "notification_topic": "test-topic",
                 "cron": "0 9 * * 1",
                 "timezone": "Europe/Warsaw",
             },
@@ -225,6 +321,7 @@ class TestScheduleCronNotification:
             "schedule_cron_notification",
             {
                 "message": "Daily standup reminder",
+                "notification_topic": "test-topic",
                 "cron": "30 8 * * 1-5",
                 "timezone": "America/New_York",
             },
@@ -240,6 +337,7 @@ class TestScheduleCronNotification:
             "schedule_cron_notification",
             {
                 "message": "Weekly report",
+                "notification_topic": "test-topic",
                 "cron": "0 9 * * 1",
                 "timezone": "UTC",
                 "label": "weekly-report",
@@ -259,6 +357,7 @@ class TestScheduleCronNotification:
                 "schedule_cron_notification",
                 {
                     "message": "Test",
+                    "notification_topic": "test-topic",
                     "cron": "* * *",
                     "timezone": "Europe/Warsaw",
                 },
@@ -273,6 +372,7 @@ class TestScheduleCronNotification:
                 "schedule_cron_notification",
                 {
                     "message": "Test",
+                    "notification_topic": "test-topic",
                     "cron": "0 9 * * 1 2024",
                     "timezone": "Europe/Warsaw",
                 },
@@ -285,6 +385,7 @@ class TestScheduleCronNotification:
                 "schedule_cron_notification",
                 {
                     "message": "Test",
+                    "notification_topic": "test-topic",
                     "cron": "0 9 * * 1",
                     "timezone": "Invalid/Zone",
                 },
@@ -299,6 +400,7 @@ class TestScheduleCronNotification:
                 "schedule_cron_notification",
                 {
                     "message": "Test",
+                    "notification_topic": "test-topic",
                     "cron": "0 9 * * 1",
                     "timezone": "Europe/Warsaw",
                     "label": "my label with spaces",
@@ -315,6 +417,7 @@ class TestScheduleCronNotification:
                 "schedule_cron_notification",
                 {
                     "message": "Test",
+                    "notification_topic": "test-topic",
                     "cron": "0 9 * * 1",
                     "timezone": "Europe/Warsaw",
                     "label": "reminder (daily)",

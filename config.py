@@ -2,7 +2,6 @@ import os
 
 REQUIRED_ENV_VARS = [
     "QSTASH_TOKEN",
-    "NTFY_TOPIC",
 ]
 
 

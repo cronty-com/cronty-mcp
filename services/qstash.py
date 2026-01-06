@@ -5,6 +5,7 @@ from qstash import QStash
 
 def schedule_message(
     message: str,
+    topic: str,
     not_before: int | None = None,
     delay: str | None = None,
 ) -> str:
@@ -12,6 +13,7 @@ def schedule_message(
 
     Args:
         message: The notification text to send.
+        topic: The NTFY topic to send to.
         not_before: Unix timestamp in seconds (UTC) for absolute scheduling.
         delay: QStash delay format string (e.g., "1d", "2h30m") for relative scheduling.
 
@@ -26,8 +28,7 @@ def schedule_message(
         raise ValueError("Either not_before or delay must be provided")
 
     client = QStash(token=os.environ["QSTASH_TOKEN"])
-    ntfy_topic = os.environ["NTFY_TOPIC"]
-    url = f"https://ntfy.sh/{ntfy_topic}"
+    url = f"https://ntfy.sh/{topic}"
 
     kwargs: dict = {
         "url": url,
@@ -46,6 +47,7 @@ def schedule_message(
 
 def create_schedule(
     message: str,
+    topic: str,
     cron: str,
     label: str | None = None,
 ) -> str:
@@ -53,6 +55,7 @@ def create_schedule(
 
     Args:
         message: The notification text to send.
+        topic: The NTFY topic to send to.
         cron: Cron expression with CRON_TZ prefix.
         label: Optional label for filtering logs in Upstash dashboard.
 
@@ -60,8 +63,7 @@ def create_schedule(
         The QStash schedule ID.
     """
     client = QStash(token=os.environ["QSTASH_TOKEN"])
-    ntfy_topic = os.environ["NTFY_TOPIC"]
-    destination = f"https://ntfy.sh/{ntfy_topic}"
+    destination = f"https://ntfy.sh/{topic}"
 
     kwargs: dict = {
         "destination": destination,

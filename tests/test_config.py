@@ -49,7 +49,6 @@ class TestGetJwtSecret:
 class TestGetMissingEnvVars:
     def test_returns_empty_when_all_set_with_auth_disabled(self, monkeypatch):
         monkeypatch.setenv("QSTASH_TOKEN", "token")
-        monkeypatch.setenv("NTFY_TOPIC", "topic")
         monkeypatch.setenv("AUTH_DISABLED", "true")
         monkeypatch.delenv("JWT_SECRET", raising=False)
 
@@ -57,7 +56,6 @@ class TestGetMissingEnvVars:
 
     def test_returns_empty_when_all_set_with_auth_enabled(self, monkeypatch):
         monkeypatch.setenv("QSTASH_TOKEN", "token")
-        monkeypatch.setenv("NTFY_TOPIC", "topic")
         monkeypatch.setenv("JWT_SECRET", "secret")
         monkeypatch.delenv("AUTH_DISABLED", raising=False)
 
@@ -65,7 +63,6 @@ class TestGetMissingEnvVars:
 
     def test_includes_jwt_secret_when_auth_enabled(self, monkeypatch):
         monkeypatch.setenv("QSTASH_TOKEN", "token")
-        monkeypatch.setenv("NTFY_TOPIC", "topic")
         monkeypatch.delenv("JWT_SECRET", raising=False)
         monkeypatch.delenv("AUTH_DISABLED", raising=False)
 
@@ -74,7 +71,6 @@ class TestGetMissingEnvVars:
 
     def test_excludes_jwt_secret_when_auth_disabled(self, monkeypatch):
         monkeypatch.setenv("QSTASH_TOKEN", "token")
-        monkeypatch.setenv("NTFY_TOPIC", "topic")
         monkeypatch.setenv("AUTH_DISABLED", "true")
         monkeypatch.delenv("JWT_SECRET", raising=False)
 
@@ -83,16 +79,7 @@ class TestGetMissingEnvVars:
 
     def test_includes_qstash_token_when_missing(self, monkeypatch):
         monkeypatch.delenv("QSTASH_TOKEN", raising=False)
-        monkeypatch.setenv("NTFY_TOPIC", "topic")
         monkeypatch.setenv("AUTH_DISABLED", "true")
 
         missing = get_missing_env_vars()
         assert "QSTASH_TOKEN" in missing
-
-    def test_includes_ntfy_topic_when_missing(self, monkeypatch):
-        monkeypatch.setenv("QSTASH_TOKEN", "token")
-        monkeypatch.delenv("NTFY_TOPIC", raising=False)
-        monkeypatch.setenv("AUTH_DISABLED", "true")
-
-        missing = get_missing_env_vars()
-        assert "NTFY_TOPIC" in missing

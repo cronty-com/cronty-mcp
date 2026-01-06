@@ -96,4 +96,5 @@ Use `/commit` command for AI-attributed commits.
 
 Required variables (validated at startup):
 - `QSTASH_TOKEN` - QStash API token
-- `NTFY_TOPIC` - Notification delivery topic
+
+Note: NTFY topic is passed as `notification_topic` parameter on each tool call.

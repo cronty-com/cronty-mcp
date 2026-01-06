@@ -106,8 +106,9 @@ Users want AI agents that can:
 | Variable                     | Description                                       | Required |
 |------------------------------|---------------------------------------------------|----------|
 | `QSTASH_TOKEN`               | QStash API token                                  | Yes      |
-| `NTFY_TOPIC`                 | NTFY topic for notification delivery              | Yes      |
 | `QSTASH_PLAN_LEVEL`          | QStash plan: `free`, `pay-as-you-go`, `fixed-fee` | No (P1)  |
+
+Note: NTFY topic is passed as `notification_topic` parameter on each tool call, enabling multi-user deployments.
 
 ## 7. Constraints
 
