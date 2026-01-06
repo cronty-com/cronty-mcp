@@ -4,20 +4,20 @@ Cronty MCP Evaluation - Simple tests for each tool.
 Note: These tests WILL send actual notifications and create schedules.
 -->
 <evaluation>
-<!--    <qa_pair>-->
-<!--        <question>Use the health tool to check the server status. Is the server configured correctly? Answer: Yes or No.</question>-->
-<!--        <answer>Yes</answer>-->
-<!--    </qa_pair>-->
+    <qa_pair>
+        <question>Use the health tool to check the server status. Is the server configured correctly? Answer: Yes or No.</question>
+        <answer>Yes</answer>
+    </qa_pair>
 
-<!--    <qa_pair>-->
-<!--        <question>Send a test push notification with the message "Evaluation test" to the topic "cronty-eval-test". Was the notification sent successfully? Answer: Yes or No.</question>-->
-<!--        <answer>Yes</answer>-->
-<!--    </qa_pair>-->
+    <qa_pair>
+        <question>Send a test push notification with the message "Evaluation test" to the topic "cronty-eval-test". Was the notification sent successfully? Answer: Yes or No.</question>
+        <answer>Yes</answer>
+    </qa_pair>
 
-<!--    <qa_pair>-->
-<!--        <question>Schedule a one-off notification with the message "Delayed test" to topic "cronty-eval-test" with a delay of 1h. Was the notification scheduled successfully? Answer: Yes or No.</question>-->
-<!--        <answer>Yes</answer>-->
-<!--    </qa_pair>-->
+    <qa_pair>
+        <question>Schedule a one-off notification with the message "Delayed test" to topic "cronty-eval-test" with a delay of 1h. Was the notification scheduled successfully? Answer: Yes or No.</question>
+        <answer>Yes</answer>
+    </qa_pair>
 
     <qa_pair>
         <question>Check what date is today and schedule a recurring cron notification with the message "Cron test" to topic "cronty-eval-test" to happen in 1h and then every week at the same time in UTC. Was the cron schedule created successfully? Answer: Yes or No.</question>
