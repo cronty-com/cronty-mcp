@@ -6,15 +6,18 @@ Evaluates MCP servers by running test questions against them using Claude.
 Uses FastMCP Client for MCP connections and Anthropic SDK for Claude integration.
 
 Usage:
-    # Local server (stdio) - run from project root
-    python evaluation.py -t stdio -c "uv run fastmcp run server.py" evaluation.xml
+    # From scripts directory (recommended)
+    cd .claude/skills/fastmcp-builder/scripts
+    uv sync
+    uv run python evaluation.py -c "uv run fastmcp run server.py" \\
+        --cwd /path/to/project evaluation.xml
 
     # HTTP server
     python evaluation.py -t http -u https://example.com/mcp evaluation.xml
 
     # With custom model and output
-    python evaluation.py -t stdio -c "uv run fastmcp run server.py" \\
-        -m claude-haiku-4-5 -o report.md evaluation.xml
+    python evaluation.py -c "uv run fastmcp run server.py" \\
+        --cwd /path/to/project -m claude-haiku-4-5 -o report.md evaluation.xml
 """
 
 import argparse
@@ -27,7 +30,18 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import anthropic
+from dotenv import load_dotenv
 from fastmcp import Client
+
+
+def load_env_file(cwd: str | None) -> None:
+    """Load .env file from cwd (project root) or current directory."""
+    if cwd:
+        env_path = Path(cwd) / ".env"
+        if env_path.exists():
+            load_dotenv(env_path)
+            return
+    load_dotenv()
 
 
 @dataclass
@@ -382,6 +396,8 @@ Examples:
     parser.add_argument("-o", "--output", type=Path, help="Output file for report")
 
     args = parser.parse_args()
+
+    load_env_file(args.cwd)
 
     if not args.eval_file.exists():
         print(f"Evaluation file not found: {args.eval_file}", file=sys.stderr)

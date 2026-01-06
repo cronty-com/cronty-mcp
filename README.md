@@ -457,49 +457,68 @@ Run evaluations against your MCP server using Claude to verify tool effectivenes
 
 ### Setup
 
+Add your Anthropic API key to `.env`:
+
 ```bash
-cd .claude/skills/fastmcp-builder/scripts
-uv sync
-export ANTHROPIC_API_KEY=your_api_key_here
+# In .env
+ANTHROPIC_API_KEY=your_api_key_here
 ```
 
 > **Note:** Requires an Anthropic API key from [console.anthropic.com](https://console.anthropic.com). Claude Max subscription does not include API access.
 
 ### Create an Evaluation File
 
-Create an XML file with question-answer pairs (see `scripts/example.xml`):
+Create an XML file with question-answer pairs (see `evaluation.xml` for examples):
 
 ```xml
 <evaluation>
    <qa_pair>
-      <question>Schedule a notification for tomorrow at 9am UTC. What confirmation message is returned?</question>
-      <answer>Notification scheduled</answer>
+      <question>Use the health tool. Is the server healthy? Answer: Yes or No.</question>
+      <answer>Yes</answer>
    </qa_pair>
 </evaluation>
 ```
 
 ### Run Evaluations
 
+#### From Project Root
+
 ```bash
-# Against local server (run from project root)
-cd /path/to/cronty-mcp
 uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
-    -c "uv run fastmcp run server.py" evaluation.xml
+    -c "uv run fastmcp run server.py" \
+    evaluation.xml
+```
 
-# Or from scripts dir with --cwd
+Against HTTP server:
+
+```bash
+uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
+    -t http \
+    -u https://your-hostname.fastmcp.app/mcp \
+    evaluation.xml
+```
+
+With custom model and output:
+
+```bash
+uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
+    -c "uv run fastmcp run server.py" \
+    -m claude-sonnet-4-20250514 \
+    -o report.md \
+    evaluation.xml
+```
+
+#### From Scripts Directory (Alternative)
+
+If you don't want evaluation dependencies in your project:
+
+```bash
 cd .claude/skills/fastmcp-builder/scripts
+uv sync
 uv run python evaluation.py \
     -c "uv run fastmcp run server.py" \
-    --cwd /path/to/cronty-mcp \
-    /path/to/cronty-mcp/evaluation.xml
-
-# Against HTTP server
-uv run python evaluation.py -t http -u https://your-hostname.fastmcp.app/mcp evaluation.xml
-
-# With custom model and output
-uv run python evaluation.py \
-    -c "uv run fastmcp run server.py" \
-    -m claude-haiku-4-5 -o report.md evaluation.xml
+    --cwd ../../../.. \
+    ../../../../evaluation.xml
 ```
 
 ### Evaluation Guidelines
