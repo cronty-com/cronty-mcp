@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Example Evaluation File for FastMCP Servers
+
+This file demonstrates the structure and format for MCP server evaluations.
+Replace these examples with questions specific to your MCP server.
+
+Guidelines:
+- Questions should be READ-ONLY, INDEPENDENT, NON-DESTRUCTIVE, IDEMPOTENT
+- Answers should be single, verifiable values (not lists or complex objects)
+- Answers should be STABLE (won't change over time)
+- Questions should require multiple tool calls
+-->
+<evaluation>
+    <qa_pair>
+        <question>Find the project created in Q2 2024 with the highest number of completed tasks. What is the project name?</question>
+        <answer>Website Redesign</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>Search for issues labeled as "bug" that were closed in March 2024. Which user closed the most issues? Provide their username.</question>
+        <answer>sarah_dev</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>Look for pull requests that modified files in the /api directory and were merged between January 1 and January 31, 2024. How many different contributors worked on these PRs?</question>
+        <answer>7</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>Find the repository that was archived in Q3 2023 and had previously been the most forked project in the organization. What was the primary programming language used in that repository?</question>
+        <answer>Python</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>Locate the initiative focused on improving customer onboarding that was completed in late 2023. The project lead created a retrospective document after completion. What was the lead's role title at that time?</question>
+        <answer>Product Manager</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>Among all bugs reported in January 2024 that were marked as critical priority, which assignee resolved the highest percentage of their assigned bugs within 48 hours? Provide the assignee's username.</question>
+        <answer>alex_eng</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>Find the account that upgraded from the Starter to Enterprise plan in Q4 2023 and had the highest annual contract value. What industry does this account operate in?</question>
+        <answer>Healthcare</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>Search for documentation pages updated in December 2023. Which page had the most unique contributors? Provide the page title.</question>
+        <answer>API Reference Guide</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>Find the team that shipped the most features in 2023 based on completed project milestones. What is the team name?</question>
+        <answer>Platform Engineering</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>Locate the security incident that occurred in February 2024 and was resolved within 24 hours. What was the severity level assigned to it? Answer: Low, Medium, High, or Critical.</question>
+        <answer>High</answer>
+    </qa_pair>
+</evaluation>

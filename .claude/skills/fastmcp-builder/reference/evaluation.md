@@ -12,8 +12,8 @@ Create evaluations that test whether LLMs can effectively use your MCP server to
 
 ### Evaluation Requirements
 - Create 10 human-readable questions
-- Questions must be READ-ONLY, INDEPENDENT, NON-DESTRUCTIVE
-- Each question requires multiple tool calls
+- Questions must be READ-ONLY, INDEPENDENT, NON-DESTRUCTIVE, IDEMPOTENT
+- Each question requires multiple tool calls (potentially dozens)
 - Answers must be single, verifiable values
 - Answers must be STABLE (won't change over time)
 
@@ -37,9 +37,10 @@ Create evaluations that test whether LLMs can effectively use your MCP server to
    - Each question should NOT depend on answers to other questions
    - Should not assume prior operations from other questions
 
-2. **Questions MUST require ONLY NON-DESTRUCTIVE operations**
+2. **Questions MUST require ONLY NON-DESTRUCTIVE and IDEMPOTENT operations**
    - Should not require modifying state to arrive at the answer
    - Read-only tool usage only
+   - Repeated execution must yield the same results
 
 3. **Questions must be REALISTIC, CLEAR, CONCISE, and COMPLEX**
    - Require multiple (potentially dozens of) tool calls
@@ -80,12 +81,28 @@ Create evaluations that test whether LLMs can effectively use your MCP server to
    - May require difficult decisions on which tools to call
    - Despite ambiguity, still have a SINGLE VERIFIABLE ANSWER
 
+10. **Questions should MOSTLY reflect real human use cases**
+    - Information retrieval tasks that humans assisted by an LLM would care about
+    - Not artificial or contrived scenarios
+
+11. **Questions may require dozens of tool calls**
+    - This challenges LLMs with limited context
+    - Encourages MCP server tools to reduce information returned
+
 ### Stability
 
-10. **Answers must NOT change over time**
+12. **Answers must NOT change over time**
     - Don't ask about "current state" which is dynamic
     - Don't count things that change (reactions, replies, members)
     - Use historical/completed data
+
+### Challenge
+
+13. **DO NOT let the MCP server RESTRICT the kinds of questions you create**
+    - Create challenging and complex questions
+    - Some may not be solvable with available MCP server tools
+    - Questions may require specific output formats
+    - This helps identify gaps in tool coverage
 
 ---
 
@@ -138,35 +155,48 @@ Create evaluations that test whether LLMs can effectively use your MCP server to
 
 ## Evaluation Process
 
-### Step 1: Tool Inspection
+### Step 1: Documentation Inspection
+
+Read the documentation of the target API:
+- Understand available endpoints and functionality
+- Parallelize this step AS MUCH AS POSSIBLE
+- If ambiguity exists, fetch additional information from the web
+- Do NOT read the MCP server implementation code
+
+### Step 2: Tool Inspection
 
 List the tools available in your MCP server:
 - Understand input/output schemas
 - Read docstrings and descriptions
-- Do NOT call tools yet
+- Do NOT call tools yet at this stage
 
-### Step 2: Content Exploration
+### Step 3: Developing Understanding
+
+Iterate steps 1 and 2 until you have a good understanding:
+- Think about the kinds of tasks you want to create
+- Refine your understanding of tool capabilities
+- Do NOT read the MCP server implementation code
+- Use intuition to create realistic but VERY challenging tasks
+
+### Step 4: Content Exploration
 
 Use the MCP server tools to explore content:
-- Use READ-ONLY operations only
+- Use READ-ONLY and NON-DESTRUCTIVE operations only
 - Identify specific content for creating questions
 - Use `limit` parameter (<10) to avoid overwhelming context
 - Use pagination
+- Parallelize exploration with independent sub-agents
 
-### Step 3: Question Generation
+### Step 5: Task Generation & Verification
 
-Create 10 questions following all guidelines:
-- Complex, multi-hop
-- Read-only, independent
-- Stable answers
-- Diverse answer types
-
-### Step 4: Answer Verification
-
-Solve each question yourself using the MCP server:
-- Verify answers are correct
-- Ensure answers are stable
-- Remove questions requiring write operations
+Create 10 questions and verify answers:
+- Complex, multi-hop questions
+- Read-only, independent, idempotent
+- Stable answers with diverse types
+- Solve each question yourself using the MCP server
+- Flag any operations requiring write access
+- Remove questions that require destructive operations
+- Parallelize solving to avoid running out of context
 
 ---
 
@@ -270,7 +300,73 @@ Why it's poor: List format, order may vary. Better: "How many repositories have 
 
 ## Running Evaluations
 
-### With FastMCP Test Client
+The evaluation harness uses FastMCP Client for MCP connections and Claude for answering questions.
+
+### Setup
+
+**Using uv (recommended):**
+```bash
+cd .claude/skills/fastmcp-builder/scripts
+uv sync
+export ANTHROPIC_API_KEY=your_api_key_here
+```
+
+**Using pip:**
+```bash
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY=your_api_key_here
+```
+
+### Running the Evaluation Script
+
+**Local server (stdio) - run from project root:**
+```bash
+uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
+  -c "uv run fastmcp run server.py" \
+  evaluation.xml
+```
+
+**With working directory:**
+```bash
+uv run python evaluation.py \
+  -c "uv run fastmcp run server.py" \
+  --cwd /path/to/project \
+  evaluation.xml
+```
+
+**HTTP server:**
+```bash
+uv run python evaluation.py \
+  -t http \
+  -u https://example.com/mcp \
+  evaluation.xml
+```
+
+**With custom model and output:**
+```bash
+uv run python evaluation.py \
+  -c "uv run fastmcp run server.py" \
+  -m claude-haiku-4-5 \
+  -o report.md \
+  evaluation.xml
+```
+
+### Command-Line Options
+
+```
+positional arguments:
+  eval_file             Path to evaluation XML file
+
+options:
+  -t, --transport       Transport type: stdio or http (default: stdio)
+  -c, --command         Command to run server (for stdio)
+  --cwd                 Working directory for the server command
+  -u, --url             Server URL (for http transport)
+  -m, --model           Claude model (default: claude-haiku-4-5)
+  -o, --output          Output file for report (default: stdout)
+```
+
+### Manual Testing with FastMCP Client
 
 ```python
 import asyncio
@@ -279,11 +375,9 @@ from server import mcp
 
 async def run_evaluation():
     async with Client(transport=mcp) as client:
-        # List available tools
         tools = await client.list_tools()
         print(f"Available tools: {[t.name for t in tools]}")
 
-        # Test a specific question
         result = await client.call_tool(
             "search_users",
             {"query": "project lead", "limit": 10}
@@ -302,3 +396,31 @@ asyncio.run(run_evaluation())
 5. **Ensure stability** with historical data
 6. **Verify answers** by solving them yourself
 7. **Iterate and refine** based on findings
+
+---
+
+## Troubleshooting
+
+### Connection Errors
+
+If you get connection errors:
+- **stdio**: Verify the server script path is correct
+- **http**: Check the URL is accessible
+- Ensure required API keys are set in environment variables
+
+### Low Accuracy
+
+If many evaluations fail:
+- Review Claude's feedback for each task
+- Check if tool descriptions are clear and comprehensive
+- Verify input parameters are well-documented
+- Consider whether tools return too much or too little data
+- Ensure error messages are actionable
+
+### Timeout Issues
+
+If tasks are timing out:
+- Use a more capable model
+- Check if tools are returning too much data
+- Verify pagination is working correctly
+- Consider simplifying complex questions

@@ -570,6 +570,25 @@ This skill includes detailed reference guides:
 | [Python Guide](reference/python-guide.md)     | Pydantic v2 patterns, context injection, complete examples  |
 | [Evaluation](reference/evaluation.md)         | Creating evaluations to test MCP server effectiveness       |
 
+## Evaluation Scripts
+
+The `scripts/` directory contains a complete evaluation harness:
+
+| File                            | Purpose                                              |
+|---------------------------------|------------------------------------------------------|
+| [evaluation.py](scripts/evaluation.py) | FastMCP + Claude evaluation harness          |
+| [example.xml](scripts/example.xml)     | Example evaluation file with sample questions |
+| [pyproject.toml](scripts/pyproject.toml) | Dependencies for uv                         |
+| [requirements.txt](scripts/requirements.txt) | Dependencies for pip                    |
+
+**Quick start:**
+```bash
+cd .claude/skills/fastmcp-builder/scripts
+uv sync  # or: pip install -r requirements.txt
+export ANTHROPIC_API_KEY=your_key
+uv run python evaluation.py -t stdio -s ../../../../server.py evaluation.xml
+```
+
 ## External References
 
 - FastMCP Documentation: https://gofastmcp.com/llms.txt

@@ -451,6 +451,66 @@ OAuth 2.0 with Dynamic Client Registration (DCR) support via WorkOS/Authkit is p
 
 Clients with native OAuth DCR support (Claude Code, VS Code, Cursor) will be able to authenticate without bearer tokens once implemented.
 
+## Evaluations
+
+Run evaluations against your MCP server using Claude to verify tool effectiveness.
+
+### Setup
+
+```bash
+cd .claude/skills/fastmcp-builder/scripts
+uv sync
+export ANTHROPIC_API_KEY=your_api_key_here
+```
+
+> **Note:** Requires an Anthropic API key from [console.anthropic.com](https://console.anthropic.com). Claude Max subscription does not include API access.
+
+### Create an Evaluation File
+
+Create an XML file with question-answer pairs (see `scripts/example.xml`):
+
+```xml
+<evaluation>
+   <qa_pair>
+      <question>Schedule a notification for tomorrow at 9am UTC. What confirmation message is returned?</question>
+      <answer>Notification scheduled</answer>
+   </qa_pair>
+</evaluation>
+```
+
+### Run Evaluations
+
+```bash
+# Against local server (run from project root)
+cd /path/to/cronty-mcp
+uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
+    -c "uv run fastmcp run server.py" evaluation.xml
+
+# Or from scripts dir with --cwd
+cd .claude/skills/fastmcp-builder/scripts
+uv run python evaluation.py \
+    -c "uv run fastmcp run server.py" \
+    --cwd /path/to/cronty-mcp \
+    /path/to/cronty-mcp/evaluation.xml
+
+# Against HTTP server
+uv run python evaluation.py -t http -u https://your-hostname.fastmcp.app/mcp evaluation.xml
+
+# With custom model and output
+uv run python evaluation.py \
+    -c "uv run fastmcp run server.py" \
+    -m claude-haiku-4-5 -o report.md evaluation.xml
+```
+
+### Evaluation Guidelines
+
+- Questions must be **READ-ONLY, INDEPENDENT, NON-DESTRUCTIVE, IDEMPOTENT**
+- Answers must be **single, verifiable values** (not lists or objects)
+- Answers must be **STABLE** (won't change over time)
+- Create **challenging questions** that require multiple tool calls
+
+See `.claude/skills/fastmcp-builder/reference/evaluation.md` for the complete guide.
+
 ## Development
 
 ### Install Dependencies
