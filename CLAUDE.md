@@ -86,6 +86,14 @@ MCP Tool → Service → External API (QStash/NTFY)
 - Prefer explicit over implicit
 - Environment variables validated at startup, accessed via config module
 
+### Tool Development
+
+When creating or modifying MCP tools, use the `fastmcp-builder` skill in `.claude/skills/fastmcp-builder/SKILL.md` for patterns and best practices.
+Key patterns:
+- Use `Annotated[type, Field(...)]` for parameter validation
+- Use `Field(pattern=...)` for regex validation (not custom validators)
+- Keep tools thin - delegate business logic to services layer
+
 ## Git Conventions
 
 Use conventional commits: `feat:`, `fix:`, `test:`, `refactor:`, `docs:`, `chore:`

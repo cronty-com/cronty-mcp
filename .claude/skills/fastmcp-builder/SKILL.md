@@ -214,6 +214,26 @@ def create_item(
     return {"name": name, "quantity": quantity, "category": category}
 ```
 
+Tool with regex pattern validation:
+```python
+from typing import Annotated
+from pydantic import Field
+
+TOPIC_PATTERN = r"^[a-z0-9]+(-[a-z0-9]+)*$"
+
+@mcp.tool
+def send_notification(
+    message: Annotated[str, Field(description="Message text")],
+    topic: Annotated[str, Field(
+        description="Topic name (lowercase alphanumeric with dashes)",
+        pattern=TOPIC_PATTERN,
+    )],
+) -> dict:
+    """Send a notification to a topic."""
+    return {"status": "sent", "topic": topic}
+```
+Use `pattern` for regex validation instead of custom validators. Pydantic will automatically reject invalid values and include "pattern" in the error message.
+
 Tool with context access:
 ```python
 from fastmcp import FastMCP, Context
