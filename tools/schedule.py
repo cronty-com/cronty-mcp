@@ -6,7 +6,9 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from fastmcp.exceptions import ToolError
 from pydantic import Field
 
-from services.qstash import create_schedule, list_schedules, schedule_message
+from services.qstash import ScheduleNotFoundError, create_schedule, list_schedules
+from services.qstash import delete_schedule as qstash_delete
+from services.qstash import schedule_message
 
 DELAY_PATTERN = r"^(\d+d)?(\d+h)?(\d+m)?(\d+s)?$"
 TIMEZONE_EXAMPLES = (
@@ -338,3 +340,36 @@ def list_scheduled_notifications(
         "schedules": schedules,
         "count": len(schedules),
     }
+
+
+def delete_schedule(
+    schedule_id: Annotated[
+        str,
+        Field(
+            description=(
+                "The schedule ID to delete. "
+                "This ID is returned when creating a cron schedule."
+            )
+        ),
+    ],
+) -> dict:
+    """Delete a scheduled notification by its ID.
+
+    Permanently removes a cron schedule. The schedule will stop firing
+    and cannot be recovered. Use the schedule_id returned from
+    schedule_cron_notification.
+    """
+    try:
+        qstash_delete(schedule_id)
+        return {
+            "success": True,
+            "schedule_id": schedule_id,
+            "confirmation": f"Schedule {schedule_id} deleted successfully",
+        }
+    except ScheduleNotFoundError:
+        raise ToolError(
+            f"Schedule not found: {schedule_id}. "
+            "It may have already been deleted or the ID is incorrect."
+        )
+    except Exception as e:
+        raise ToolError(f"Failed to delete schedule: {e}")

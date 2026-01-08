@@ -3,6 +3,7 @@ from fastmcp import FastMCP
 
 from config import get_jwt_secret, is_auth_disabled
 from tools import (
+    delete_schedule,
     health,
     list_scheduled_notifications,
     schedule_cron_notification,
@@ -32,6 +33,7 @@ def create_auth():
 
 mcp = FastMCP("Cronty MCP", auth=create_auth())
 
+mcp.tool(delete_schedule)
 mcp.tool(health)
 mcp.tool(list_scheduled_notifications)
 mcp.tool(schedule_cron_notification)

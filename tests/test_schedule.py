@@ -627,3 +627,67 @@ class TestFormatTimestamp:
 
         result = _format_timestamp(0)
         assert result == "1970-01-01T00:00:00+00:00"
+
+
+@pytest.fixture
+def mock_qstash_delete():
+    with patch("services.qstash.QStash") as mock_class:
+        mock_client = MagicMock()
+        mock_client.schedule.get.return_value = MagicMock()
+        mock_client.schedule.delete.return_value = None
+        mock_class.return_value = mock_client
+        yield mock_client
+
+
+class TestDeleteSchedule:
+    async def test_success_delete_schedule(self, client, mock_qstash_delete, env_vars):
+        result = await client.call_tool(
+            "delete_schedule",
+            {"schedule_id": "scd_abc123"},
+        )
+        result_str = str(result)
+        assert "scd_abc123" in result_str
+        assert "deleted" in result_str.lower()
+        mock_qstash_delete.schedule.get.assert_called_once_with("scd_abc123")
+        mock_qstash_delete.schedule.delete.assert_called_once_with("scd_abc123")
+
+    async def test_delete_nonexistent_schedule(self, client, env_vars):
+        with patch("services.qstash.QStash") as mock_class:
+            mock_client = MagicMock()
+            mock_client.schedule.get.side_effect = Exception("Schedule not found")
+            mock_class.return_value = mock_client
+
+            with pytest.raises(ToolError) as exc_info:
+                await client.call_tool(
+                    "delete_schedule",
+                    {"schedule_id": "scd_nonexistent"},
+                )
+            assert "not found" in str(exc_info.value).lower()
+            assert "scd_nonexistent" in str(exc_info.value)
+
+    async def test_delete_with_404_error(self, client, env_vars):
+        with patch("services.qstash.QStash") as mock_class:
+            mock_client = MagicMock()
+            mock_client.schedule.get.side_effect = Exception("404 Not Found")
+            mock_class.return_value = mock_client
+
+            with pytest.raises(ToolError) as exc_info:
+                await client.call_tool(
+                    "delete_schedule",
+                    {"schedule_id": "scd_invalid"},
+                )
+            assert "not found" in str(exc_info.value).lower()
+
+    async def test_delete_with_other_error(self, client, env_vars):
+        with patch("services.qstash.QStash") as mock_class:
+            mock_client = MagicMock()
+            mock_client.schedule.get.return_value = MagicMock()
+            mock_client.schedule.delete.side_effect = Exception("Connection timeout")
+            mock_class.return_value = mock_client
+
+            with pytest.raises(ToolError) as exc_info:
+                await client.call_tool(
+                    "delete_schedule",
+                    {"schedule_id": "scd_abc123"},
+                )
+            assert "failed to delete" in str(exc_info.value).lower()

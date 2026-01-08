@@ -46,4 +46,20 @@ Note: These tests WILL send actual notifications and create schedules.
             Does the list include a schedule with the label "eval-list-test" and does the response show the schedule_id, cron_expression, and notification_body for that schedule? Answer: Yes or No.</question>
         <answer>Yes</answer>
     </qa_pair>
+
+    <qa_pair>
+        <question>
+            Create a cron schedule with message "Delete test scheduled at {current_time}" to topic "cronty-eval-test" that runs every day at midnight UTC (cron: 0 0 * * *).
+            Replace the `{current_time}` placeholder with the current time in UTC.
+            Then immediately delete the schedule using the returned schedule ID.
+            Was the schedule created and then deleted successfully? Answer: Yes or No.</question>
+        <answer>Yes</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>
+            Try to delete a schedule with ID "scd_nonexistent_test_id".
+            Did the deletion fail with a "not found" error? Answer: Yes or No.</question>
+        <answer>Yes</answer>
+    </qa_pair>
 </evaluation>
