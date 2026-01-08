@@ -77,3 +77,53 @@ def create_schedule(
     schedule_id = client.schedule.create(**kwargs)
 
     return schedule_id
+
+
+def _parse_cron(cron: str) -> tuple[str, str]:
+    if cron.startswith("CRON_TZ="):
+        parts = cron.split(" ", 1)
+        timezone = parts[0].replace("CRON_TZ=", "")
+        cron_expression = parts[1] if len(parts) > 1 else ""
+        return cron_expression, timezone
+    return cron, "UTC"
+
+
+def _format_timestamp(ts: int | None) -> str | None:
+    if ts is None:
+        return None
+    from datetime import UTC, datetime
+
+    ts_seconds = ts / 1000
+    return datetime.fromtimestamp(ts_seconds, tz=UTC).isoformat()
+
+
+def list_schedules(topic: str | None = None) -> list[dict]:
+    client = QStash(token=os.environ["QSTASH_TOKEN"])
+    schedules = client.schedule.list()
+
+    results = []
+    for schedule in schedules:
+        if "ntfy.sh" not in schedule.destination:
+            continue
+
+        schedule_topic = schedule.destination.split("ntfy.sh/")[-1]
+
+        if topic is not None and schedule_topic != topic:
+            continue
+
+        cron_expression, tz = _parse_cron(schedule.cron)
+
+        results.append(
+            {
+                "schedule_id": schedule.schedule_id,
+                "cron_expression": cron_expression,
+                "timezone": tz,
+                "notification_topic": schedule_topic,
+                "label": schedule.label,
+                "next_occurrence": _format_timestamp(schedule.next_schedule_time),
+                "last_occurrence": _format_timestamp(schedule.last_schedule_time),
+                "notification_body": schedule.body,
+            }
+        )
+
+    return results

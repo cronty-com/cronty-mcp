@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from fastmcp.exceptions import ToolError
 from pydantic import Field
 
-from services.qstash import create_schedule, schedule_message
+from services.qstash import create_schedule, list_schedules, schedule_message
 
 DELAY_PATTERN = r"^(\d+d)?(\d+h)?(\d+m)?(\d+s)?$"
 TIMEZONE_EXAMPLES = (
@@ -309,3 +309,32 @@ def _validate_label(label: str) -> None:
             "Only alphanumeric characters, hyphens, underscores, and periods "
             "are allowed. Examples: 'daily-standup', 'weekly_report', 'reminder.v1'"
         )
+
+
+def list_scheduled_notifications(
+    notification_topic: Annotated[
+        str | None,
+        Field(
+            default=None,
+            description=(
+                "Optional: filter to show only schedules for this notification topic. "
+                "If not provided, returns all scheduled notifications. "
+                "Format: lowercase alphanumeric with dashes (e.g., 'my-alerts')"
+            ),
+            pattern=TOPIC_PATTERN,
+        ),
+    ] = None,
+) -> dict:
+    """List scheduled recurring notifications.
+
+    Returns all recurring cron notification schedules.
+    Optionally filter by a specific notification topic.
+
+    Note: One-off scheduled notifications (created with schedule_notification)
+    are not included as they are pending messages, not recurring schedules.
+    """
+    schedules = list_schedules(topic=notification_topic)
+    return {
+        "schedules": schedules,
+        "count": len(schedules),
+    }

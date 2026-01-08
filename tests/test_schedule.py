@@ -424,3 +424,206 @@ class TestScheduleCronNotification:
                 },
             )
         assert "invalid label" in str(exc_info.value).lower()
+
+
+@pytest.fixture
+def mock_qstash_list():
+    with patch("services.qstash.QStash") as mock_class:
+        mock_client = MagicMock()
+        mock_client.schedule.list.return_value = []
+        mock_class.return_value = mock_client
+        yield mock_client
+
+
+def create_mock_schedule(
+    schedule_id: str,
+    destination: str,
+    cron: str,
+    body: str | None = None,
+    label: str | None = None,
+    next_schedule_time: int | None = None,
+    last_schedule_time: int | None = None,
+) -> MagicMock:
+    mock = MagicMock()
+    mock.schedule_id = schedule_id
+    mock.destination = destination
+    mock.cron = cron
+    mock.body = body
+    mock.label = label
+    mock.next_schedule_time = next_schedule_time
+    mock.last_schedule_time = last_schedule_time
+    return mock
+
+
+class TestListScheduledNotifications:
+    async def test_returns_ntfy_schedules(self, client, mock_qstash_list, env_vars):
+        mock_schedule = create_mock_schedule(
+            schedule_id="sched_123",
+            destination="https://ntfy.sh/my-topic",
+            cron="CRON_TZ=Europe/Warsaw 0 9 * * 1",
+            body="Test message",
+            label="test-label",
+            next_schedule_time=1736330400000,
+            last_schedule_time=1735725600000,
+        )
+        mock_qstash_list.schedule.list.return_value = [mock_schedule]
+
+        result = await client.call_tool("list_scheduled_notifications", {})
+
+        assert result.data["count"] == 1
+        schedule = result.data["schedules"][0]
+        assert schedule["schedule_id"] == "sched_123"
+        assert schedule["cron_expression"] == "0 9 * * 1"
+        assert schedule["timezone"] == "Europe/Warsaw"
+        assert schedule["notification_topic"] == "my-topic"
+        assert schedule["notification_body"] == "Test message"
+        assert schedule["label"] == "test-label"
+
+    async def test_filters_by_topic(self, client, mock_qstash_list, env_vars):
+        mock_schedule_a = create_mock_schedule(
+            schedule_id="sched_1",
+            destination="https://ntfy.sh/topic-a",
+            cron="0 9 * * 1",
+        )
+        mock_schedule_b = create_mock_schedule(
+            schedule_id="sched_2",
+            destination="https://ntfy.sh/topic-b",
+            cron="0 10 * * 1",
+        )
+        mock_qstash_list.schedule.list.return_value = [mock_schedule_a, mock_schedule_b]
+
+        result = await client.call_tool(
+            "list_scheduled_notifications",
+            {"notification_topic": "topic-a"},
+        )
+
+        assert result.data["count"] == 1
+        assert result.data["schedules"][0]["notification_topic"] == "topic-a"
+
+    async def test_returns_empty_list_when_no_matches(
+        self, client, mock_qstash_list, env_vars
+    ):
+        mock_qstash_list.schedule.list.return_value = []
+
+        result = await client.call_tool("list_scheduled_notifications", {})
+
+        assert result.data["count"] == 0
+        assert result.data["schedules"] == []
+
+    async def test_handles_null_body(self, client, mock_qstash_list, env_vars):
+        mock_schedule = create_mock_schedule(
+            schedule_id="sched_123",
+            destination="https://ntfy.sh/my-topic",
+            cron="0 9 * * 1",
+            body=None,
+        )
+        mock_qstash_list.schedule.list.return_value = [mock_schedule]
+
+        result = await client.call_tool("list_scheduled_notifications", {})
+
+        assert result.data["count"] == 1
+        assert result.data["schedules"][0]["notification_body"] is None
+
+
+class TestListScheduledNotificationsFiltering:
+    async def test_excludes_non_ntfy_destinations(
+        self, client, mock_qstash_list, env_vars
+    ):
+        mock_ntfy = create_mock_schedule(
+            schedule_id="sched_ntfy",
+            destination="https://ntfy.sh/my-topic",
+            cron="0 9 * * 1",
+            body="NTFY message",
+        )
+        mock_webhook = create_mock_schedule(
+            schedule_id="sched_webhook",
+            destination="https://example.com/webhook",
+            cron="0 10 * * 1",
+        )
+        mock_other = create_mock_schedule(
+            schedule_id="sched_other",
+            destination="https://other-service.io/notify",
+            cron="0 11 * * 1",
+        )
+        mock_qstash_list.schedule.list.return_value = [
+            mock_ntfy,
+            mock_webhook,
+            mock_other,
+        ]
+
+        result = await client.call_tool("list_scheduled_notifications", {})
+
+        assert result.data["count"] == 1
+        assert result.data["schedules"][0]["schedule_id"] == "sched_ntfy"
+
+    async def test_excludes_malformed_destinations(
+        self, client, mock_qstash_list, env_vars
+    ):
+        mock_valid = create_mock_schedule(
+            schedule_id="sched_valid",
+            destination="https://ntfy.sh/valid-topic",
+            cron="0 9 * * 1",
+            body="Valid",
+        )
+        mock_malformed = create_mock_schedule(
+            schedule_id="sched_malformed",
+            destination="not-a-valid-url",
+            cron="0 10 * * 1",
+        )
+        mock_qstash_list.schedule.list.return_value = [mock_valid, mock_malformed]
+
+        result = await client.call_tool("list_scheduled_notifications", {})
+
+        assert result.data["count"] == 1
+        assert result.data["schedules"][0]["schedule_id"] == "sched_valid"
+
+
+class TestParseCron:
+    def test_with_timezone(self):
+        from services.qstash import _parse_cron
+
+        cron_expression, timezone = _parse_cron("CRON_TZ=Europe/Warsaw 0 9 * * 1")
+        assert cron_expression == "0 9 * * 1"
+        assert timezone == "Europe/Warsaw"
+
+    def test_without_timezone(self):
+        from services.qstash import _parse_cron
+
+        cron_expression, timezone = _parse_cron("0 9 * * 1")
+        assert cron_expression == "0 9 * * 1"
+        assert timezone == "UTC"
+
+    def test_with_utc_timezone(self):
+        from services.qstash import _parse_cron
+
+        cron_expression, timezone = _parse_cron("CRON_TZ=UTC 30 8 * * 1-5")
+        assert cron_expression == "30 8 * * 1-5"
+        assert timezone == "UTC"
+
+    def test_with_complex_expression(self):
+        from services.qstash import _parse_cron
+
+        cron_expression, timezone = _parse_cron("CRON_TZ=America/New_York 0 0 1 * *")
+        assert cron_expression == "0 0 1 * *"
+        assert timezone == "America/New_York"
+
+
+class TestFormatTimestamp:
+    def test_valid_timestamp_milliseconds(self):
+        from services.qstash import _format_timestamp
+
+        result = _format_timestamp(1736330400000)
+        assert "2025-01-08" in result
+        assert "+00:00" in result
+
+    def test_none_returns_none(self):
+        from services.qstash import _format_timestamp
+
+        result = _format_timestamp(None)
+        assert result is None
+
+    def test_zero_timestamp(self):
+        from services.qstash import _format_timestamp
+
+        result = _format_timestamp(0)
+        assert result == "1970-01-01T00:00:00+00:00"
