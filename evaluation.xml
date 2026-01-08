@@ -5,22 +5,34 @@ Note: These tests WILL send actual notifications and create schedules.
 -->
 <evaluation>
     <qa_pair>
-        <question>Use the health tool to check the server status. Is the server configured correctly? Answer: Yes or No.</question>
+        <question>
+            Use the health tool to check the server status.
+            Is the server configured correctly? Answer: Yes or No.</question>
         <answer>Yes</answer>
     </qa_pair>
 
     <qa_pair>
-        <question>Send a test push notification with the message "Evaluation test" to the topic "cronty-eval-test". Was the notification sent successfully? Answer: Yes or No.</question>
+        <question>
+            Check the current date and time and send a test push notification with the message "Evaluation test scheduled at {current_time}" to the topic "cronty-eval-test".
+            Replace the ` {current_time} ` placeholder with the current time in UTC.
+            Was the notification sent successfully? Answer: Yes or No.
+        </question>
         <answer>Yes</answer>
     </qa_pair>
 
     <qa_pair>
-        <question>Schedule a one-off notification with the message "Delayed test" to topic "cronty-eval-test" with a delay of 1h. Was the notification scheduled successfully? Answer: Yes or No.</question>
+        <question>
+            Check the current date and time and schedule a one-off notification with the message "Delayed test scheduled at {current_time}" to topic "cronty-eval-test" with a delay of 1h.
+            Replace the ` {current_time} ` placeholder with the current time in UTC.
+            Was the notification scheduled successfully? Answer: Yes or No.</question>
         <answer>Yes</answer>
     </qa_pair>
 
     <qa_pair>
-        <question>Check what date is today and schedule a recurring cron notification with the message "Cron test" to topic "cronty-eval-test" to happen in 1h and then every week at the same time in UTC. Was the cron schedule created successfully? Answer: Yes or No.</question>
+        <question>
+            Check what date is today and schedule a recurring cron notification with the message "Cron test scheduled at {current_time} with expression {cron_expression}" to topic "cronty-eval-test" to happen in 1h and then every week at the same time in UTC.
+            Replace the ` {current_time} ` placeholder with the current time in UTC and the `{cron_expression}` with the cron expression.
+            Was the cron schedule created successfully? Answer: Yes or No.</question>
         <answer>Yes</answer>
     </qa_pair>
 </evaluation>
