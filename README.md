@@ -624,6 +624,8 @@ set -a; source .env; set +a
 
 # Option 2: Add to ~/.zshrc or ~/.bashrc for persistence
 export QSTASH_TOKEN=your_qstash_token_here
+export ANTHROPIC_API_KEY=your_api_key_here  # Required for running evaluations
+export JWT_SECRET=your_jwt_secret_here      # Required if AUTH_DISABLED is not set
 ```
 
 ### Run Claude Code in Sandbox
@@ -646,6 +648,13 @@ docker sandbox run \
   -e QSTASH_TOKEN=$QSTASH_TOKEN \
   -e AUTH_DISABLED=true \
   --template cronty-dev claude "Run the tests"
+
+# With auth enabled and evaluation support
+docker sandbox run \
+  -e QSTASH_TOKEN=$QSTASH_TOKEN \
+  -e JWT_SECRET=$JWT_SECRET \
+  -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
+  --template cronty-dev claude
 ```
 
 ### Available Commands Inside Sandbox
