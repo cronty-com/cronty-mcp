@@ -21,6 +21,7 @@ A FastMCP server that enables AI agents to schedule notifications and reminders 
 
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) package manager
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) 4.50+ (for Docker Sandboxes development)
 - [Upstash QStash](https://console.upstash.com/qstash) account and token
 - [NTFY](https://ntfy.sh/) topic for receiving notifications (passed as `notification_topic` parameter to each tool)
 
@@ -602,6 +603,70 @@ To test against FastMCP Cloud deployment:
    ```
 
 3. Run Claude Code with the env var set.
+
+## Claude Code with Docker Sandboxes
+
+Run Claude Code in an isolated Docker container with all dependencies pre-installed.
+
+### Build the Custom Template
+
+```bash
+docker build -t cronty-dev .
+```
+
+### Set Environment Variables
+
+The `.env` file is not mounted in the container for security. Set variables in your shell:
+
+```bash
+# Option 1: Source from .env file
+set -a; source .env; set +a
+
+# Option 2: Add to ~/.zshrc or ~/.bashrc for persistence
+export QSTASH_TOKEN=your_qstash_token_here
+```
+
+### Run Claude Code in Sandbox
+
+```bash
+# Development mode (auth disabled)
+docker sandbox run \
+  -e QSTASH_TOKEN=$QSTASH_TOKEN \
+  -e AUTH_DISABLED=true \
+  --template cronty-dev claude
+
+# Continue a previous conversation
+docker sandbox run \
+  -e QSTASH_TOKEN=$QSTASH_TOKEN \
+  -e AUTH_DISABLED=true \
+  --template cronty-dev claude -c
+
+# With a direct prompt
+docker sandbox run \
+  -e QSTASH_TOKEN=$QSTASH_TOKEN \
+  -e AUTH_DISABLED=true \
+  --template cronty-dev claude "Run the tests"
+```
+
+### Available Commands Inside Sandbox
+
+All uv commands work inside the sandbox:
+
+```bash
+uv run pytest                    # Run tests
+uv run fastmcp dev server.py     # Start dev server with MCP Inspector
+uv run ruff check .              # Lint code
+uv add some-package              # Add dependencies
+```
+
+### What's Included
+
+The Docker Sandbox template includes:
+- Claude Code with automatic credential handling
+- Python 3.13 with uv package manager
+- All project dependencies pre-installed
+- Docker CLI, GitHub CLI, Git, Node.js, Go
+- Non-root `agent` user with sudo privileges
 
 ## License
 
