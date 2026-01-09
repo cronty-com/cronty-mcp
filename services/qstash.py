@@ -122,6 +122,7 @@ def list_schedules(topic: str | None = None) -> list[dict]:
                 "timezone": tz,
                 "notification_topic": schedule_topic,
                 "label": schedule.label,
+                "paused": schedule.paused,
                 "next_occurrence": _format_timestamp(schedule.next_schedule_time),
                 "last_occurrence": _format_timestamp(schedule.last_schedule_time),
                 "notification_body": schedule.body,
@@ -157,3 +158,59 @@ def delete_schedule(schedule_id: str) -> Result[None]:
         return Err("api_error", str(e))
 
     return Ok(None)
+
+
+def pause_schedule(schedule_id: str) -> Result[bool]:
+    """Pause a schedule.
+
+    Args:
+        schedule_id: The schedule ID to pause.
+
+    Returns:
+        Ok(True) on success, or Err with code and message on failure.
+        Error codes: "not_found", "api_error"
+    """
+    client = QStash(token=os.environ["QSTASH_TOKEN"])
+
+    try:
+        client.schedule.get(schedule_id)
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "not found" in error_msg or "404" in error_msg:
+            return Err("not_found")
+        return Err("api_error", str(e))
+
+    try:
+        client.schedule.pause(schedule_id)
+    except Exception as e:
+        return Err("api_error", str(e))
+
+    return Ok(True)
+
+
+def resume_schedule(schedule_id: str) -> Result[bool]:
+    """Resume a schedule.
+
+    Args:
+        schedule_id: The schedule ID to resume.
+
+    Returns:
+        Ok(False) on success, or Err with code and message on failure.
+        Error codes: "not_found", "api_error"
+    """
+    client = QStash(token=os.environ["QSTASH_TOKEN"])
+
+    try:
+        client.schedule.get(schedule_id)
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "not found" in error_msg or "404" in error_msg:
+            return Err("not_found")
+        return Err("api_error", str(e))
+
+    try:
+        client.schedule.resume(schedule_id)
+    except Exception as e:
+        return Err("api_error", str(e))
+
+    return Ok(False)

@@ -441,6 +441,7 @@ def create_mock_schedule(
     cron: str,
     body: str | None = None,
     label: str | None = None,
+    paused: bool = False,
     next_schedule_time: int | None = None,
     last_schedule_time: int | None = None,
 ) -> MagicMock:
@@ -450,6 +451,7 @@ def create_mock_schedule(
     mock.cron = cron
     mock.body = body
     mock.label = label
+    mock.paused = paused
     mock.next_schedule_time = next_schedule_time
     mock.last_schedule_time = last_schedule_time
     return mock
@@ -691,3 +693,167 @@ class TestDeleteSchedule:
             )
             assert result.data["success"] is False
             assert "failed to delete" in result.data["error"].lower()
+
+
+@pytest.fixture
+def mock_qstash_pause():
+    with patch("services.qstash.QStash") as mock_class:
+        mock_client = MagicMock()
+        mock_client.schedule.get.return_value = MagicMock()
+        mock_client.schedule.pause.return_value = None
+        mock_class.return_value = mock_client
+        yield mock_client
+
+
+class TestPauseSchedule:
+    async def test_success_pause_schedule(self, client, mock_qstash_pause, env_vars):
+        result = await client.call_tool(
+            "pause_schedule",
+            {"schedule_id": "scd_abc123"},
+        )
+        assert result.data["success"] is True
+        assert result.data["schedule_id"] == "scd_abc123"
+        assert result.data["paused"] is True
+        assert "paused" in result.data["confirmation"].lower()
+        mock_qstash_pause.schedule.get.assert_called_once_with("scd_abc123")
+        mock_qstash_pause.schedule.pause.assert_called_once_with("scd_abc123")
+
+    async def test_pause_nonexistent_schedule(self, client, env_vars):
+        with patch("services.qstash.QStash") as mock_class:
+            mock_client = MagicMock()
+            mock_client.schedule.get.side_effect = Exception("Schedule not found")
+            mock_class.return_value = mock_client
+
+            result = await client.call_tool(
+                "pause_schedule",
+                {"schedule_id": "scd_nonexistent"},
+            )
+            assert result.data["success"] is False
+            assert result.data["schedule_id"] == "scd_nonexistent"
+            assert "not found" in result.data["error"].lower()
+
+    async def test_pause_with_404_error(self, client, env_vars):
+        with patch("services.qstash.QStash") as mock_class:
+            mock_client = MagicMock()
+            mock_client.schedule.get.side_effect = Exception("404 Not Found")
+            mock_class.return_value = mock_client
+
+            result = await client.call_tool(
+                "pause_schedule",
+                {"schedule_id": "scd_invalid"},
+            )
+            assert result.data["success"] is False
+            assert "not found" in result.data["error"].lower()
+
+    async def test_pause_with_other_error(self, client, env_vars):
+        with patch("services.qstash.QStash") as mock_class:
+            mock_client = MagicMock()
+            mock_client.schedule.get.return_value = MagicMock()
+            mock_client.schedule.pause.side_effect = Exception("Connection timeout")
+            mock_class.return_value = mock_client
+
+            result = await client.call_tool(
+                "pause_schedule",
+                {"schedule_id": "scd_abc123"},
+            )
+            assert result.data["success"] is False
+            assert "failed to pause" in result.data["error"].lower()
+
+
+@pytest.fixture
+def mock_qstash_resume():
+    with patch("services.qstash.QStash") as mock_class:
+        mock_client = MagicMock()
+        mock_client.schedule.get.return_value = MagicMock()
+        mock_client.schedule.resume.return_value = None
+        mock_class.return_value = mock_client
+        yield mock_client
+
+
+class TestResumeSchedule:
+    async def test_success_resume_schedule(self, client, mock_qstash_resume, env_vars):
+        result = await client.call_tool(
+            "resume_schedule",
+            {"schedule_id": "scd_abc123"},
+        )
+        assert result.data["success"] is True
+        assert result.data["schedule_id"] == "scd_abc123"
+        assert result.data["paused"] is False
+        assert "resumed" in result.data["confirmation"].lower()
+        mock_qstash_resume.schedule.get.assert_called_once_with("scd_abc123")
+        mock_qstash_resume.schedule.resume.assert_called_once_with("scd_abc123")
+
+    async def test_resume_nonexistent_schedule(self, client, env_vars):
+        with patch("services.qstash.QStash") as mock_class:
+            mock_client = MagicMock()
+            mock_client.schedule.get.side_effect = Exception("Schedule not found")
+            mock_class.return_value = mock_client
+
+            result = await client.call_tool(
+                "resume_schedule",
+                {"schedule_id": "scd_nonexistent"},
+            )
+            assert result.data["success"] is False
+            assert result.data["schedule_id"] == "scd_nonexistent"
+            assert "not found" in result.data["error"].lower()
+
+    async def test_resume_with_404_error(self, client, env_vars):
+        with patch("services.qstash.QStash") as mock_class:
+            mock_client = MagicMock()
+            mock_client.schedule.get.side_effect = Exception("404 Not Found")
+            mock_class.return_value = mock_client
+
+            result = await client.call_tool(
+                "resume_schedule",
+                {"schedule_id": "scd_invalid"},
+            )
+            assert result.data["success"] is False
+            assert "not found" in result.data["error"].lower()
+
+    async def test_resume_with_other_error(self, client, env_vars):
+        with patch("services.qstash.QStash") as mock_class:
+            mock_client = MagicMock()
+            mock_client.schedule.get.return_value = MagicMock()
+            mock_client.schedule.resume.side_effect = Exception("Connection timeout")
+            mock_class.return_value = mock_client
+
+            result = await client.call_tool(
+                "resume_schedule",
+                {"schedule_id": "scd_abc123"},
+            )
+            assert result.data["success"] is False
+            assert "failed to resume" in result.data["error"].lower()
+
+
+class TestListScheduledNotificationsPausedField:
+    async def test_returns_paused_field_true(self, client, mock_qstash_list, env_vars):
+        mock_schedule = create_mock_schedule(
+            schedule_id="sched_123",
+            destination="https://ntfy.sh/my-topic",
+            cron="CRON_TZ=Europe/Warsaw 0 9 * * 1",
+            body="Test message",
+            paused=True,
+        )
+        mock_qstash_list.schedule.list.return_value = [mock_schedule]
+
+        result = await client.call_tool("list_scheduled_notifications", {})
+
+        assert result.data["count"] == 1
+        schedule = result.data["schedules"][0]
+        assert schedule["paused"] is True
+
+    async def test_returns_paused_field_false(self, client, mock_qstash_list, env_vars):
+        mock_schedule = create_mock_schedule(
+            schedule_id="sched_123",
+            destination="https://ntfy.sh/my-topic",
+            cron="CRON_TZ=Europe/Warsaw 0 9 * * 1",
+            body="Test message",
+            paused=False,
+        )
+        mock_qstash_list.schedule.list.return_value = [mock_schedule]
+
+        result = await client.call_tool("list_scheduled_notifications", {})
+
+        assert result.data["count"] == 1
+        schedule = result.data["schedules"][0]
+        assert schedule["paused"] is False

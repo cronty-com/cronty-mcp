@@ -14,6 +14,12 @@ from services.qstash import (
 from services.qstash import (
     delete_schedule as qstash_delete,
 )
+from services.qstash import (
+    pause_schedule as qstash_pause,
+)
+from services.qstash import (
+    resume_schedule as qstash_resume,
+)
 
 DELAY_PATTERN = r"^(\d+d)?(\d+h)?(\d+m)?(\d+s)?$"
 TIMEZONE_EXAMPLES = (
@@ -387,4 +393,92 @@ def delete_schedule(
         "success": False,
         "schedule_id": schedule_id,
         "error": f"Failed to delete schedule: {result.message}",
+    }
+
+
+def pause_schedule(
+    schedule_id: Annotated[
+        str,
+        Field(
+            description=(
+                "The schedule ID to pause. "
+                "This ID is returned when creating a cron schedule."
+            )
+        ),
+    ],
+) -> dict:
+    """Pause a scheduled notification.
+
+    Temporarily stops a cron schedule from firing. The schedule configuration
+    is preserved and can be resumed later. Use the schedule_id returned from
+    schedule_cron_notification.
+    """
+    result = qstash_pause(schedule_id)
+
+    if result.is_ok:
+        return {
+            "success": True,
+            "schedule_id": schedule_id,
+            "paused": True,
+            "confirmation": f"Schedule {schedule_id} paused successfully",
+        }
+
+    if result.code == "not_found":
+        return {
+            "success": False,
+            "schedule_id": schedule_id,
+            "error": (
+                f"Schedule not found: {schedule_id}. "
+                "It may have been deleted or the ID is incorrect."
+            ),
+        }
+
+    return {
+        "success": False,
+        "schedule_id": schedule_id,
+        "error": f"Failed to pause schedule: {result.message}",
+    }
+
+
+def resume_schedule(
+    schedule_id: Annotated[
+        str,
+        Field(
+            description=(
+                "The schedule ID to resume. "
+                "This ID is returned when creating a cron schedule."
+            )
+        ),
+    ],
+) -> dict:
+    """Resume a paused scheduled notification.
+
+    Reactivates a paused cron schedule. The schedule will resume firing
+    at its next scheduled time. Use the schedule_id returned from
+    schedule_cron_notification.
+    """
+    result = qstash_resume(schedule_id)
+
+    if result.is_ok:
+        return {
+            "success": True,
+            "schedule_id": schedule_id,
+            "paused": False,
+            "confirmation": f"Schedule {schedule_id} resumed successfully",
+        }
+
+    if result.code == "not_found":
+        return {
+            "success": False,
+            "schedule_id": schedule_id,
+            "error": (
+                f"Schedule not found: {schedule_id}. "
+                "It may have been deleted or the ID is incorrect."
+            ),
+        }
+
+    return {
+        "success": False,
+        "schedule_id": schedule_id,
+        "error": f"Failed to resume schedule: {result.message}",
     }
