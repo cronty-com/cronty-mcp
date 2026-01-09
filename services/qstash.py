@@ -2,6 +2,8 @@ import os
 
 from qstash import QStash
 
+from services.result import Err, Ok, Result
+
 
 def schedule_message(
     message: str,
@@ -129,21 +131,15 @@ def list_schedules(topic: str | None = None) -> list[dict]:
     return results
 
 
-class ScheduleNotFoundError(Exception):
-    """Raised when a schedule does not exist."""
-
-    pass
-
-
-def delete_schedule(schedule_id: str) -> None:
+def delete_schedule(schedule_id: str) -> Result[None]:
     """Delete a schedule.
 
     Args:
         schedule_id: The schedule ID to delete.
 
-    Raises:
-        ScheduleNotFoundError: If the schedule doesn't exist.
-        Exception: If the API call fails.
+    Returns:
+        Ok(None) on success, or Err with code and message on failure.
+        Error codes: "not_found", "api_error"
     """
     client = QStash(token=os.environ["QSTASH_TOKEN"])
 
@@ -152,7 +148,12 @@ def delete_schedule(schedule_id: str) -> None:
     except Exception as e:
         error_msg = str(e).lower()
         if "not found" in error_msg or "404" in error_msg:
-            raise ScheduleNotFoundError(f"Schedule not found: {schedule_id}")
-        raise
+            return Err("not_found")
+        return Err("api_error", str(e))
 
-    client.schedule.delete(schedule_id)
+    try:
+        client.schedule.delete(schedule_id)
+    except Exception as e:
+        return Err("api_error", str(e))
+
+    return Ok(None)

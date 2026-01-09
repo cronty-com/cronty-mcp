@@ -50,13 +50,13 @@ The tool does not validate the ID format locally - it delegates validation to th
 
 ### Error Handling
 
-When deleting a non-existent schedule, the tool returns a clear error message indicating the schedule was not found. This helps users understand that:
+When deleting a non-existent schedule, the tool returns a result with `success: false` and an error message. This is not an exception - it's a normal response that the agent can interpret. This helps users understand that:
 - The schedule may have already been deleted
 - The ID might be incorrect
 
 ### Response Format
 
-On successful deletion, the tool returns a simple confirmation:
+On successful deletion:
 
 ```json
 {
@@ -66,11 +66,22 @@ On successful deletion, the tool returns a simple confirmation:
 }
 ```
 
+On error (e.g., schedule not found):
+
+```json
+{
+  "success": false,
+  "schedule_id": "scd_abc123",
+  "error": "Schedule not found: scd_abc123. It may have already been deleted or the ID is incorrect."
+}
+```
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `success` | `boolean` | Whether the deletion succeeded |
-| `schedule_id` | `string` | The ID of the deleted schedule |
-| `confirmation` | `string` | Human-readable confirmation message |
+| `schedule_id` | `string` | The ID of the schedule |
+| `confirmation` | `string` | Human-readable confirmation message (success only) |
+| `error` | `string` | Human-readable error message (failure only) |
 
 ## Non-functional Requirements
 
@@ -164,39 +175,80 @@ def delete_schedule(
     """
 ```
 
-### Service Layer
+### Result Type
 
-Add to `services/qstash.py`:
+Uses a proper `Result` type (`services/result.py`) instead of exceptions for expected errors:
 
 ```python
-def delete_schedule(schedule_id: str) -> None:
-    """Delete a schedule."""
-    client = QStash(token=os.environ["QSTASH_TOKEN"])
-    client.schedule.delete(schedule_id)
+@dataclass(frozen=True, slots=True)
+class Ok[T]:
+    value: T
+
+    @property
+    def is_ok(self) -> bool:
+        return True
+
+    @property
+    def is_err(self) -> bool:
+        return False
+
+@dataclass(frozen=True, slots=True)
+class Err:
+    code: str
+    message: str = ""
+
+    @property
+    def is_ok(self) -> bool:
+        return False
+
+    @property
+    def is_err(self) -> bool:
+        return True
+
+type Result[T] = Ok[T] | Err
 ```
 
-### Error Handling in Tool
+### Service Layer
+
+Add to `services/qstash.py` using Result pattern:
 
 ```python
-from fastmcp.exceptions import ToolError
-from services import qstash as qstash_service
+from services.result import Err, Ok, Result
 
-def delete_schedule(schedule_id: ...):
+def delete_schedule(schedule_id: str) -> Result[None]:
+    client = QStash(token=os.environ["QSTASH_TOKEN"])
+
     try:
-        qstash_service.delete_schedule(schedule_id)
-        return {
-            "success": True,
-            "schedule_id": schedule_id,
-            "confirmation": f"Schedule {schedule_id} deleted successfully",
-        }
+        client.schedule.get(schedule_id)
     except Exception as e:
         error_msg = str(e).lower()
         if "not found" in error_msg or "404" in error_msg:
-            raise ToolError(
-                f"Schedule not found: {schedule_id}. "
-                "It may have already been deleted or the ID is incorrect."
-            )
-        raise ToolError(f"Failed to delete schedule: {e}")
+            return Err("not_found")
+        return Err("api_error", str(e))
+
+    try:
+        client.schedule.delete(schedule_id)
+    except Exception as e:
+        return Err("api_error", str(e))
+
+    return Ok(None)
+```
+
+### Tool Implementation
+
+```python
+from services.qstash import delete_schedule as qstash_delete
+
+def delete_schedule(schedule_id: ...):
+    result = qstash_delete(schedule_id)
+
+    if result.is_ok:
+        return {"success": True, "schedule_id": schedule_id, ...}
+
+    if result.code == "not_found":
+        return {"success": False, "schedule_id": schedule_id, "error": "..."}
+
+    return {"success": False, "schedule_id": schedule_id, "error": result.message}
 ```
 
 ### Project Structure Update
@@ -206,6 +258,7 @@ cronty-mcp/
 ├── tools/
 │   └── schedule.py           # Add delete_schedule
 ├── services/
+│   ├── result.py             # Result type (Ok/Err)
 │   └── qstash.py             # Add delete_schedule function
 └── tests/
     └── test_schedule.py      # Add delete tests

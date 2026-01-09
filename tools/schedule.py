@@ -6,9 +6,14 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from fastmcp.exceptions import ToolError
 from pydantic import Field
 
-from services.qstash import ScheduleNotFoundError, create_schedule, list_schedules
-from services.qstash import delete_schedule as qstash_delete
-from services.qstash import schedule_message
+from services.qstash import (
+    create_schedule,
+    list_schedules,
+    schedule_message,
+)
+from services.qstash import (
+    delete_schedule as qstash_delete,
+)
 
 DELAY_PATTERN = r"^(\d+d)?(\d+h)?(\d+m)?(\d+s)?$"
 TIMEZONE_EXAMPLES = (
@@ -359,17 +364,27 @@ def delete_schedule(
     and cannot be recovered. Use the schedule_id returned from
     schedule_cron_notification.
     """
-    try:
-        qstash_delete(schedule_id)
+    result = qstash_delete(schedule_id)
+
+    if result.is_ok:
         return {
             "success": True,
             "schedule_id": schedule_id,
             "confirmation": f"Schedule {schedule_id} deleted successfully",
         }
-    except ScheduleNotFoundError:
-        raise ToolError(
-            f"Schedule not found: {schedule_id}. "
-            "It may have already been deleted or the ID is incorrect."
-        )
-    except Exception as e:
-        raise ToolError(f"Failed to delete schedule: {e}")
+
+    if result.code == "not_found":
+        return {
+            "success": False,
+            "schedule_id": schedule_id,
+            "error": (
+                f"Schedule not found: {schedule_id}. "
+                "It may have already been deleted or the ID is incorrect."
+            ),
+        }
+
+    return {
+        "success": False,
+        "schedule_id": schedule_id,
+        "error": f"Failed to delete schedule: {result.message}",
+    }
