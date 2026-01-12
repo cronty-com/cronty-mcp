@@ -657,6 +657,17 @@ docker sandbox run \
   --template cronty-dev claude
 ```
 
+### Claude Settings in Sandbox
+
+Global Claude settings (`~/.claude/settings.json`) are not available inside the sandbox due to security restrictions. To use custom settings (hooks, permissions, preferences), create a local settings file in the project:
+
+```bash
+# Create local settings file
+cp ~/.claude/settings.json .claude/settings.local.json
+```
+
+The `.claude/settings.local.json` file is mounted with the project and will be used by Claude Code inside the sandbox.
+
 ### Available Commands Inside Sandbox
 
 All uv commands work inside the sandbox:
