@@ -16,6 +16,10 @@ A FastMCP server that enables AI agents to schedule notifications and reminders 
 | `send_push_notification` | Send an immediate push notification |
 | `schedule_notification` | Schedule a one-off notification for a future time |
 | `schedule_cron_notification` | Schedule recurring notifications using cron syntax |
+| `list_scheduled_notifications` | List all recurring cron schedules (optionally filter by topic) |
+| `pause_schedule` | Temporarily pause a cron schedule |
+| `resume_schedule` | Resume a paused cron schedule |
+| `delete_schedule` | Permanently delete a cron schedule |
 
 ## Prerequisites
 
