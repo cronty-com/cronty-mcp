@@ -62,4 +62,20 @@ Note: These tests WILL send actual notifications and create schedules.
             Did the deletion fail with a "not found" error? Answer: Yes or No.</question>
         <answer>Yes</answer>
     </qa_pair>
+
+    <qa_pair>
+        <question>
+            Read the resource "cron://examples" to get cron expression examples.
+            Does the response include at least 5 examples, each with an expression and description?
+            Answer: Yes or No.</question>
+        <answer>Yes</answer>
+    </qa_pair>
+
+    <qa_pair>
+        <question>
+            Read the resource "timezones://valid" to get the list of valid timezones.
+            Does the response include timezones from at least 3 different regions?
+            Answer: Yes or No.</question>
+        <answer>Yes</answer>
+    </qa_pair>
 </evaluation>

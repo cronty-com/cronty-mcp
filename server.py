@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP
 
 from config import get_jwt_secret, is_auth_disabled
+from resources import get_cron_examples, get_valid_timezones
 from tools import (
     delete_schedule,
     health,
@@ -43,6 +44,9 @@ mcp.tool(resume_schedule)
 mcp.tool(schedule_cron_notification)
 mcp.tool(schedule_notification)
 mcp.tool(send_push_notification)
+
+mcp.resource("cron://examples")(get_cron_examples)
+mcp.resource("timezones://valid")(get_valid_timezones)
 
 if __name__ == "__main__":
     mcp.run()
