@@ -110,6 +110,37 @@ def convert_mcp_tools_to_claude_format(mcp_tools: list) -> list[dict]:
     return claude_tools
 
 
+def create_read_resource_tool(resources: list) -> dict | None:
+    if not resources:
+        return None
+
+    resource_list = []
+    for r in resources:
+        uri = r.uri if hasattr(r, "uri") else str(r)
+        desc = r.description if hasattr(r, "description") else ""
+        resource_list.append(f"  - {uri}: {desc}" if desc else f"  - {uri}")
+
+    description = (
+        "Read a resource from the MCP server by URI. "
+        "Available resources:\n" + "\n".join(resource_list)
+    )
+
+    return {
+        "name": "read_resource",
+        "description": description,
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "uri": {
+                    "type": "string",
+                    "description": "The URI of the resource to read",
+                }
+            },
+            "required": ["uri"],
+        },
+    }
+
+
 def extract_xml_tag(text: str, tag: str) -> str:
     pattern = rf"<{tag}>(.*?)</{tag}>"
     match = re.search(pattern, text, re.DOTALL)
@@ -185,8 +216,13 @@ async def run_single_evaluation(
             for tool_use in tool_use_blocks:
                 tool_calls += 1
                 try:
-                    result = await client.call_tool(tool_use.name, tool_use.input)
-                    result_content = str(result)
+                    if tool_use.name == "read_resource":
+                        uri = tool_use.input.get("uri", "")
+                        result = await client.read_resource(uri)
+                        result_content = str(result)
+                    else:
+                        result = await client.call_tool(tool_use.name, tool_use.input)
+                        result_content = str(result)
                 except Exception as e:
                     result_content = f"Error calling tool: {e}"
 
@@ -333,6 +369,16 @@ async def run_evaluation(
         mcp_tools = await mcp_client.list_tools()
         claude_tools = convert_mcp_tools_to_claude_format(mcp_tools)
         print(f"Loaded {len(claude_tools)} tools from MCP server")
+
+        try:
+            mcp_resources = await mcp_client.list_resources()
+            if mcp_resources:
+                read_resource_tool = create_read_resource_tool(mcp_resources)
+                if read_resource_tool:
+                    claude_tools.append(read_resource_tool)
+                print(f"Loaded {len(mcp_resources)} resources from MCP server")
+        except Exception:
+            pass
 
         for i, qa_pair in enumerate(qa_pairs, 1):
             print(f"\nRunning task {i}/{len(qa_pairs)}...")
