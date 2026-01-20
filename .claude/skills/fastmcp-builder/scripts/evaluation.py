@@ -5,6 +5,11 @@ FastMCP Server Evaluation Harness
 Evaluates MCP servers by running test questions against them using Claude.
 Uses FastMCP Client for MCP connections and Anthropic SDK for Claude integration.
 
+Environment:
+    ANTHROPIC_EVAL_API_KEY: Required. API key for Claude evaluation.
+    (Uses a separate key from ANTHROPIC_API_KEY to avoid accidental charges
+    when using Claude Code with a different billing setup.)
+
 Usage:
     # From scripts directory (recommended)
     cd .claude/skills/fastmcp-builder/scripts
@@ -33,6 +38,8 @@ import anthropic
 from dotenv import load_dotenv
 from fastmcp import Client
 
+EVAL_API_KEY_VAR = "ANTHROPIC_EVAL_API_KEY"
+
 
 def load_env_file(cwd: str | None) -> None:
     """Load .env file from cwd (project root) or current directory."""
@@ -42,6 +49,23 @@ def load_env_file(cwd: str | None) -> None:
             load_dotenv(env_path)
             return
     load_dotenv()
+
+
+def get_api_key() -> str:
+    """Get API key from environment, with clear error message."""
+    import os
+
+    api_key = os.environ.get(EVAL_API_KEY_VAR)
+    if not api_key:
+        print(
+            f"Error: {EVAL_API_KEY_VAR} environment variable not set.\n"
+            f"This script uses a separate API key to avoid accidentally charging "
+            f"your account when Claude Code is configured with ANTHROPIC_API_KEY.\n"
+            f"Set {EVAL_API_KEY_VAR} in your .env file or environment.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return api_key
 
 
 @dataclass
@@ -361,7 +385,7 @@ async def run_evaluation(
         print(f"Unknown transport: {transport}", file=sys.stderr)
         sys.exit(1)
 
-    claude = anthropic.Anthropic()
+    claude = anthropic.Anthropic(api_key=get_api_key())
 
     report = EvaluationReport()
 

@@ -466,10 +466,10 @@ Add your Anthropic API key to `.env`:
 
 ```bash
 # In .env
-ANTHROPIC_API_KEY=your_api_key_here
+ANTHROPIC_EVAL_API_KEY=your_api_key_here
 ```
 
-> **Note:** Requires an Anthropic API key from [console.anthropic.com](https://console.anthropic.com). Claude Max subscription does not include API access.
+> **Note:** Requires an Anthropic API key from [console.anthropic.com](https://console.anthropic.com). Claude Max subscription does not include API access. The evaluation harness uses `ANTHROPIC_EVAL_API_KEY` (not `ANTHROPIC_API_KEY`) to avoid accidental charges when using Claude Code with a different billing setup.
 
 ### Create an Evaluation File
 
@@ -628,8 +628,8 @@ set -a; source .env; set +a
 
 # Option 2: Add to ~/.zshrc or ~/.bashrc for persistence
 export QSTASH_TOKEN=your_qstash_token_here
-export ANTHROPIC_API_KEY=your_api_key_here  # Required for running evaluations
-export JWT_SECRET=your_jwt_secret_here      # Required if AUTH_DISABLED is not set
+export ANTHROPIC_EVAL_API_KEY=your_api_key_here  # Required for running evaluations
+export JWT_SECRET=your_jwt_secret_here           # Required if AUTH_DISABLED is not set
 ```
 
 ### Run Claude Code in Sandbox
@@ -657,7 +657,7 @@ docker sandbox run \
 docker sandbox run \
   -e QSTASH_TOKEN=$QSTASH_TOKEN \
   -e JWT_SECRET=$JWT_SECRET \
-  -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
+  -e ANTHROPIC_EVAL_API_KEY=$ANTHROPIC_EVAL_API_KEY \
   --template cronty-dev claude
 ```
 

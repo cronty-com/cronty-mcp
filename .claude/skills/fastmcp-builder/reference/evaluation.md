@@ -308,13 +308,13 @@ The evaluation harness uses FastMCP Client for MCP connections and Claude for an
 ```bash
 cd .claude/skills/fastmcp-builder/scripts
 uv sync
-export ANTHROPIC_API_KEY=your_api_key_here
+export ANTHROPIC_EVAL_API_KEY=your_api_key_here
 ```
 
 **Using pip:**
 ```bash
 pip install -r requirements.txt
-export ANTHROPIC_API_KEY=your_api_key_here
+export ANTHROPIC_EVAL_API_KEY=your_api_key_here
 ```
 
 ### Running the Evaluation Script

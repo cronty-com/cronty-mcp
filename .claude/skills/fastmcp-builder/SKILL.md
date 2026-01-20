@@ -585,7 +585,7 @@ The `scripts/` directory contains a complete evaluation harness:
 ```bash
 cd .claude/skills/fastmcp-builder/scripts
 uv sync  # or: pip install -r requirements.txt
-export ANTHROPIC_API_KEY=your_key
+export ANTHROPIC_EVAL_API_KEY=your_key
 uv run python evaluation.py -t stdio -s ../../../../server.py evaluation.xml
 ```
 
