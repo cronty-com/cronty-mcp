@@ -78,4 +78,13 @@ Note: These tests WILL send actual notifications and create schedules.
             Answer: Yes or No.</question>
         <answer>Yes</answer>
     </qa_pair>
+
+    <qa_pair>
+        <question>
+            First, use the health tool to get the current date and time in UTC.
+            Then, schedule a one-off notification using only time and timezone parameters (do NOT provide a date parameter) to test the default-to-today feature.
+            Use message "Time-only default date test" to topic "cronty-eval-test" with time "23:59" and timezone "UTC".
+            Was the notification scheduled successfully AND does the confirmation message show today's date (matching the date from the health tool)? Answer: Yes or No.</question>
+        <answer>Yes</answer>
+    </qa_pair>
 </evaluation>

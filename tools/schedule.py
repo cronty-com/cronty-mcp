@@ -49,7 +49,10 @@ def schedule_notification(
     ] = None,
     date: Annotated[
         str | None,
-        Field(description="Date in YYYY-MM-DD format", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+        Field(
+            description="Date in YYYY-MM-DD format. Defaults to today if omitted.",
+            pattern=r"^\d{4}-\d{2}-\d{2}$",
+        ),
     ] = None,
     time: Annotated[
         str | None,
@@ -127,17 +130,15 @@ def _determine_scheduling_mode(
     elif has_delay:
         return "delay"
     else:
-        if date is None or time is None or timezone is None:
+        if time is None or timezone is None:
             missing = []
-            if date is None:
-                missing.append("date")
             if time is None:
                 missing.append("time")
             if timezone is None:
                 missing.append("timezone")
             raise ToolError(
                 f"Missing required parameters: {', '.join(missing)}. "
-                "date, time, and timezone are all required."
+                "time and timezone are required (date defaults to today if omitted)."
             )
         return "separate"
 
@@ -164,7 +165,9 @@ def _parse_iso_datetime(datetime_str: str) -> int:
     return int(dt.timestamp())
 
 
-def _parse_separate_params(date: str, time: str, timezone: str) -> tuple[int, str]:
+def _parse_separate_params(
+    date: str | None, time: str, timezone: str
+) -> tuple[int, str]:
     try:
         tz_info = ZoneInfo(timezone)
     except ZoneInfoNotFoundError:
@@ -172,6 +175,9 @@ def _parse_separate_params(date: str, time: str, timezone: str) -> tuple[int, st
             f"Invalid timezone: {timezone}. "
             "Use IANA timezone format (e.g., Europe/Warsaw, America/New_York)"
         )
+
+    if date is None:
+        date = datetime.now(tz_info).strftime("%Y-%m-%d")
 
     try:
         dt = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")

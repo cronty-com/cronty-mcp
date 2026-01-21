@@ -40,6 +40,16 @@ def future_date() -> str:
     return future.strftime("%Y-%m-%d")
 
 
+def future_time() -> str:
+    future = datetime.now(UTC) + timedelta(minutes=30)
+    return future.strftime("%H:%M")
+
+
+def past_time() -> str:
+    past = datetime.now(UTC) - timedelta(minutes=30)
+    return past.strftime("%H:%M")
+
+
 def past_datetime_iso() -> str:
     past = datetime.now(UTC) - timedelta(hours=1)
     return past.isoformat()
@@ -156,6 +166,53 @@ class TestScheduleWithSeparateParams:
                 },
             )
         assert "invalid timezone" in str(exc_info.value).lower()
+
+    async def test_success_with_time_and_timezone_only(
+        self, client, mock_qstash, env_vars
+    ):
+        future = future_time()
+        result = await client.call_tool(
+            "schedule_notification",
+            {
+                "message": "Reminder for today",
+                "notification_topic": "test-topic",
+                "time": future,
+                "timezone": "UTC",
+            },
+        )
+        result_str = str(result)
+        assert "test-message-id-123" in result_str
+        assert "scheduled" in result_str.lower()
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        assert today in result_str
+
+    async def test_time_only_without_timezone_fails(
+        self, client, mock_qstash, env_vars
+    ):
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_notification",
+                {
+                    "message": "Test",
+                    "notification_topic": "test-topic",
+                    "time": "14:00",
+                },
+            )
+        assert "timezone" in str(exc_info.value).lower()
+
+    async def test_time_timezone_past_time_fails(self, client, mock_qstash, env_vars):
+        past = past_time()
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool(
+                "schedule_notification",
+                {
+                    "message": "Too late",
+                    "notification_topic": "test-topic",
+                    "time": past,
+                    "timezone": "UTC",
+                },
+            )
+        assert "future" in str(exc_info.value).lower()
 
 
 class TestScheduleWithDelay:
