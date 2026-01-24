@@ -35,8 +35,8 @@ uv run python server.py            # Run server directly
 
 ```bash
 uv run pytest                      # Run all tests
-uv run pytest tests/test_health.py # Run single test file
-uv run pytest -k "health"          # Run tests matching pattern
+uv run pytest tests/test_schedule.py # Run single test file
+uv run pytest -k "schedule"          # Run tests matching pattern
 uv run pytest -x                   # Stop on first failure
 ```
 
@@ -58,7 +58,7 @@ cronty-mcp/
 ├── config.py          # Environment variable loading and validation
 ├── tools/             # MCP tool implementations
 │   ├── __init__.py
-│   └── health.py
+│   └── ...
 ├── services/          # Business logic (QStash, NTFY integrations)
 │   ├── __init__.py
 │   ├── qstash.py

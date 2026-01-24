@@ -1,4 +1,3 @@
-from tools.health import health
 from tools.push_notification import send_push_notification
 from tools.schedule import (
     delete_schedule,
@@ -11,7 +10,6 @@ from tools.schedule import (
 
 __all__ = [
     "delete_schedule",
-    "health",
     "list_scheduled_notifications",
     "pause_schedule",
     "resume_schedule",

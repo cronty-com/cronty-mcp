@@ -12,7 +12,6 @@ A FastMCP server that enables AI agents to schedule notifications and reminders 
 
 | Tool | Description |
 |------|-------------|
-| `health` | Check server configuration and environment status |
 | `send_push_notification` | Send an immediate push notification |
 | `schedule_notification` | Schedule a one-off notification for a future time |
 | `schedule_cron_notification` | Schedule recurring notifications using cron syntax |
@@ -478,7 +477,7 @@ Create an XML file with question-answer pairs (see `evaluation.xml` for examples
 ```xml
 <evaluation>
    <qa_pair>
-      <question>Use the health tool. Is the server healthy? Answer: Yes or No.</question>
+      <question>Use the send_push_notification tool with message "test" and notification_topic "demo". Did it succeed? Answer: Yes or No.</question>
       <answer>Yes</answer>
    </qa_pair>
 </evaluation>

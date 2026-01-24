@@ -6,8 +6,8 @@ Note: These tests WILL send actual notifications and create schedules.
 <evaluation>
     <qa_pair>
         <question>
-            Use the health tool to check the server status.
-            Is the server configured correctly? Answer: Yes or No.</question>
+            Send a test push notification with the message "Server check" to the topic "cronty-eval-test".
+            Was the notification sent successfully? Answer: Yes or No.</question>
         <answer>Yes</answer>
     </qa_pair>
 
@@ -81,10 +81,9 @@ Note: These tests WILL send actual notifications and create schedules.
 
     <qa_pair>
         <question>
-            First, use the health tool to get the current date and time in UTC.
-            Then, schedule a one-off notification using only time and timezone parameters (do NOT provide a date parameter) to test the default-to-today feature.
+            Check the current date and time, then schedule a one-off notification using only time and timezone parameters (do NOT provide a date parameter) to test the default-to-today feature.
             Use message "Time-only default date test" to topic "cronty-eval-test" with time "23:59" and timezone "UTC".
-            Was the notification scheduled successfully AND does the confirmation message show today's date (matching the date from the health tool)? Answer: Yes or No.</question>
+            Was the notification scheduled successfully AND does the confirmation message show today's date? Answer: Yes or No.</question>
         <answer>Yes</answer>
     </qa_pair>
 </evaluation>
