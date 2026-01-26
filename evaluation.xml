@@ -81,9 +81,10 @@ Note: These tests WILL send actual notifications and create schedules.
 
     <qa_pair>
         <question>
-            Check the current date and time, then schedule a one-off notification using only time and timezone parameters (do NOT provide a date parameter) to test the default-to-today feature.
-            Use message "Time-only default date test" to topic "cronty-eval-test" with time "23:59" and timezone "UTC".
-            Was the notification scheduled successfully AND does the confirmation message show today's date? Answer: Yes or No.</question>
+            Check the current date and time in UTC. Then compute a time that is 5 minutes from now (in HH:MM format).
+            Schedule a one-off notification using only the time and timezone parameters (do NOT provide a date parameter) to test the default-to-today feature.
+            Use message "Time-only default date test" to topic "cronty-eval-test" with the computed time and timezone "UTC".
+            Was the notification scheduled successfully AND does the confirmation message show either today's date OR tomorrow's date (to account for midnight rollover)? Answer: Yes or No.</question>
         <answer>Yes</answer>
     </qa_pair>
 </evaluation>
