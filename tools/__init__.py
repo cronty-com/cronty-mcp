@@ -7,9 +7,11 @@ from tools.schedule import (
     schedule_cron_notification,
     schedule_notification,
 )
+from tools.time import get_current_time
 
 __all__ = [
     "delete_schedule",
+    "get_current_time",
     "list_scheduled_notifications",
     "pause_schedule",
     "resume_schedule",

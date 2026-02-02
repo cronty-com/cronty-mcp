@@ -5,6 +5,7 @@ from config import get_jwt_secret, is_auth_disabled
 from resources import get_cron_examples, get_valid_timezones
 from tools import (
     delete_schedule,
+    get_current_time,
     list_scheduled_notifications,
     pause_schedule,
     resume_schedule,
@@ -36,6 +37,7 @@ def create_auth():
 mcp = FastMCP("Cronty MCP", auth=create_auth())
 
 mcp.tool(delete_schedule)
+mcp.tool(get_current_time)
 mcp.tool(list_scheduled_notifications)
 mcp.tool(pause_schedule)
 mcp.tool(resume_schedule)
