@@ -587,20 +587,27 @@ The `scripts/` directory contains a complete evaluation harness:
 | [requirements.txt](scripts/requirements.txt) | Dependencies for pip                    |
 
 **Quick start (from your project directory):**
+
 ```bash
-# Find the plugin cache path (version-independent)
-EVAL_SCRIPTS=$(find ~/.claude/plugins/cache/cronty-plugins/fastmcp-builder -name "evaluation.py" -exec dirname {} \; | head -1)
+# Step 1: Find the scripts directory (version-independent)
+EVAL_DIR=$(find ~/.claude/plugins/cache/cronty-plugins/fastmcp-builder -name "evaluation.py" -exec dirname {} \; | head -1)
 
-# Install dependencies (one time)
-cd $EVAL_SCRIPTS && uv sync && cd -
+# Step 2: Install dependencies (one-time setup)
+cd $EVAL_DIR && uv sync && cd -
 
-# Set API key
+# Step 3: Set API key
 export ANTHROPIC_EVAL_API_KEY=your_key
 
-# Run evaluation
-uv run python $EVAL_SCRIPTS/evaluation.py \
+# Step 4: Run evaluation using the virtual environment
+$EVAL_DIR/.venv/bin/python $EVAL_DIR/evaluation.py \
   -c "uv run fastmcp run server.py" \
   evaluation.xml
+```
+
+**Tip:** Add this alias to your shell profile for convenience:
+```bash
+alias mcp-eval='$EVAL_DIR/.venv/bin/python $EVAL_DIR/evaluation.py'
+# Then run: mcp-eval -c "uv run fastmcp run server.py" evaluation.xml
 ```
 
 **CLI Options:**

@@ -308,28 +308,31 @@ If you installed the fastmcp-builder plugin, find the scripts in the plugin cach
 
 ```bash
 # Find plugin cache location (version-independent)
-EVAL_SCRIPTS=$(find ~/.claude/plugins/cache/cronty-plugins/fastmcp-builder -name "evaluation.py" -exec dirname {} \; | head -1)
+EVAL_DIR=$(find ~/.claude/plugins/cache/cronty-plugins/fastmcp-builder -name "evaluation.py" -exec dirname {} \; | head -1)
 ```
 
 **Using uv (recommended):**
 ```bash
-cd $EVAL_SCRIPTS
-uv sync
+cd $EVAL_DIR && uv sync && cd -
 export ANTHROPIC_EVAL_API_KEY=your_api_key_here
 ```
 
 **Using pip:**
 ```bash
-cd $EVAL_SCRIPTS
-pip install -r requirements.txt
+cd $EVAL_DIR
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cd -
 export ANTHROPIC_EVAL_API_KEY=your_api_key_here
 ```
 
 ### Running the Evaluation Script
 
+**Important:** Use the virtual environment's Python to run the script:
+
 **Local server (stdio) - run from your project directory:**
 ```bash
-uv run python $EVAL_SCRIPTS/evaluation.py \
+$EVAL_DIR/.venv/bin/python $EVAL_DIR/evaluation.py \
   -c "uv run fastmcp run server.py" \
   evaluation.xml
 ```
