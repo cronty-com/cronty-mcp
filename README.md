@@ -488,7 +488,7 @@ Create an XML file with question-answer pairs (see `evaluation.xml` for examples
 #### From Project Root
 
 ```bash
-uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
+uv run python plugins/fastmcp-builder/skills/fastmcp-builder/scripts/evaluation.py \
     -c "uv run fastmcp run server.py" \
     evaluation.xml
 ```
@@ -496,7 +496,7 @@ uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
 Against HTTP server:
 
 ```bash
-uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
+uv run python plugins/fastmcp-builder/skills/fastmcp-builder/scripts/evaluation.py \
     -t http \
     -u https://your-hostname.fastmcp.app/mcp \
     evaluation.xml
@@ -505,7 +505,7 @@ uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
 With custom model and output:
 
 ```bash
-uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
+uv run python plugins/fastmcp-builder/skills/fastmcp-builder/scripts/evaluation.py \
     -c "uv run fastmcp run server.py" \
     -m claude-sonnet-4-20250514 \
     -o report.md \
@@ -517,12 +517,12 @@ uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
 If you don't want evaluation dependencies in your project:
 
 ```bash
-cd .claude/skills/fastmcp-builder/scripts
+cd plugins/fastmcp-builder/skills/fastmcp-builder/scripts
 uv sync
 uv run python evaluation.py \
     -c "uv run fastmcp run server.py" \
-    --cwd ../../../.. \
-    ../../../../evaluation.xml
+    --cwd ../../../../.. \
+    ../../../../../evaluation.xml
 ```
 
 ### Evaluation Guidelines
@@ -532,7 +532,7 @@ uv run python evaluation.py \
 - Answers must be **STABLE** (won't change over time)
 - Create **challenging questions** that require multiple tool calls
 
-See `.claude/skills/fastmcp-builder/reference/evaluation.md` for the complete guide.
+See `plugins/fastmcp-builder/skills/fastmcp-builder/reference/evaluation.md` for the complete guide.
 
 ## Development
 
@@ -690,6 +690,40 @@ The Docker Sandbox template includes:
 - All project dependencies pre-installed
 - Docker CLI, GitHub CLI, Git, Node.js, Go
 - Non-root `agent` user with sudo privileges
+
+## Plugin Marketplace
+
+This repository includes the **fastmcp-builder** skill as a Claude Code plugin, providing comprehensive guidance for building production-quality MCP servers with FastMCP.
+
+### Installation
+
+1. Add the marketplace:
+   ```
+   /plugin marketplace add cronty-com/cronty-mcp
+   ```
+
+2. Install the plugin:
+   ```
+   /plugin install fastmcp-builder@cronty-plugins
+   ```
+
+### Usage
+
+Invoke the skill to get guidance on building FastMCP servers:
+
+```
+/fastmcp-builder
+```
+
+The plugin includes:
+
+- **SKILL.md** - Comprehensive 4-phase guide for building MCP servers (research, implementation, review, evaluation)
+- **reference/best-practices.md** - Naming conventions, response formats, security patterns
+- **reference/python-guide.md** - Pydantic v2 patterns, async operations, pagination
+- **reference/evaluation.md** - Guide for creating evaluation test suites
+- **scripts/evaluation.py** - Evaluation harness for testing MCP servers with Claude
+
+For running evaluations, see the [Evaluations](#evaluations) section above.
 
 ## License
 

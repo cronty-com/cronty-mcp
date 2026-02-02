@@ -88,7 +88,7 @@ MCP Tool → Service → External API (QStash/NTFY)
 
 ### Tool Development
 
-When creating or modifying MCP tools, use the `fastmcp-builder` skill in `.claude/skills/fastmcp-builder/SKILL.md` for patterns and best practices.
+When creating or modifying MCP tools, use the `fastmcp-builder` skill in `plugins/fastmcp-builder/skills/fastmcp-builder/SKILL.md` for patterns and best practices.
 Key patterns:
 - Use `Annotated[type, Field(...)]` for parameter validation
 - Use `Field(pattern=...)` for regex validation (not custom validators)
