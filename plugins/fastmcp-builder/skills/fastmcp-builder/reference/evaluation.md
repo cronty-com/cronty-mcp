@@ -304,24 +304,32 @@ The evaluation harness uses FastMCP Client for MCP connections and Claude for an
 
 ### Setup
 
+If you installed the fastmcp-builder plugin, find the scripts in the plugin cache:
+
+```bash
+# Find plugin cache location (version-independent)
+EVAL_SCRIPTS=$(find ~/.claude/plugins/cache/cronty-plugins/fastmcp-builder -name "evaluation.py" -exec dirname {} \; | head -1)
+```
+
 **Using uv (recommended):**
 ```bash
-cd .claude/skills/fastmcp-builder/scripts
+cd $EVAL_SCRIPTS
 uv sync
 export ANTHROPIC_EVAL_API_KEY=your_api_key_here
 ```
 
 **Using pip:**
 ```bash
+cd $EVAL_SCRIPTS
 pip install -r requirements.txt
 export ANTHROPIC_EVAL_API_KEY=your_api_key_here
 ```
 
 ### Running the Evaluation Script
 
-**Local server (stdio) - run from project root:**
+**Local server (stdio) - run from your project directory:**
 ```bash
-uv run python .claude/skills/fastmcp-builder/scripts/evaluation.py \
+uv run python $EVAL_SCRIPTS/evaluation.py \
   -c "uv run fastmcp run server.py" \
   evaluation.xml
 ```

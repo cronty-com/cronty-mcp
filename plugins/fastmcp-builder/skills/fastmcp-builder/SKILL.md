@@ -513,30 +513,35 @@ ruff format .
 
 ### Phase 4: Evaluation
 
-Create 10 test questions that verify the server enables real tasks:
+Create 10 test questions that verify the server enables real tasks.
 
 **Question Design:**
 - Questions should be independent (don't chain results)
-- Answers must be verifiable and stable
+- Answers must be single, verifiable values (not lists or objects)
+- Answers must be stable (won't change over time)
 - Cover different tool capabilities
 - Include edge cases
 
-**Example Evaluation Format:**
+**REQUIRED XML Format:**
 
 ```xml
 <evaluation>
-  <question id="1">
-    <text>Retrieve the profile for user ID "abc123"</text>
-    <expected_tool>get_user_profile</expected_tool>
-    <verification>Response contains user ID and name fields</verification>
-  </question>
-  <question id="2">
-    <text>Create an item named "Widget" with quantity 5</text>
-    <expected_tool>create_item</expected_tool>
-    <verification>Response confirms item creation with correct values</verification>
-  </question>
+  <qa_pair>
+    <question>Get the current UTC time. Does the response include an ISO timestamp? Answer yes or no.</question>
+    <answer>yes</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>How many fields does the get_user tool return? Answer with just the number.</question>
+    <answer>3</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Call get_item with an invalid ID "xyz". Does the error message mention "not found"? Answer yes or no.</question>
+    <answer>yes</answer>
+  </qa_pair>
 </evaluation>
 ```
+
+**Important:** Use `<qa_pair>`, `<question>`, and `<answer>` tags. The answer must be a single verifiable value that can be checked via string comparison.
 
 ## Best Practices
 
@@ -581,13 +586,30 @@ The `scripts/` directory contains a complete evaluation harness:
 | [pyproject.toml](scripts/pyproject.toml) | Dependencies for uv                         |
 | [requirements.txt](scripts/requirements.txt) | Dependencies for pip                    |
 
-**Quick start:**
+**Quick start (from your project directory):**
 ```bash
-cd .claude/skills/fastmcp-builder/scripts
-uv sync  # or: pip install -r requirements.txt
+# Find the plugin cache path (version-independent)
+EVAL_SCRIPTS=$(find ~/.claude/plugins/cache/cronty-plugins/fastmcp-builder -name "evaluation.py" -exec dirname {} \; | head -1)
+
+# Install dependencies (one time)
+cd $EVAL_SCRIPTS && uv sync && cd -
+
+# Set API key
 export ANTHROPIC_EVAL_API_KEY=your_key
-uv run python evaluation.py -t stdio -s ../../../../server.py evaluation.xml
+
+# Run evaluation
+uv run python $EVAL_SCRIPTS/evaluation.py \
+  -c "uv run fastmcp run server.py" \
+  evaluation.xml
 ```
+
+**CLI Options:**
+- `-c, --command` - Command to start the server (for stdio transport)
+- `-t, --transport` - `stdio` (default) or `http`
+- `-u, --url` - Server URL (for http transport)
+- `--cwd` - Working directory for the server command
+- `-m, --model` - Claude model (default: claude-haiku-4-5)
+- `-o, --output` - Output file for report
 
 ## External References
 
