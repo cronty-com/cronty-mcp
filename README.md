@@ -24,7 +24,7 @@ A FastMCP server that enables AI agents to schedule notifications and reminders 
 
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) package manager
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) 4.50+ (for Docker Sandboxes development)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) 4.58+ (for Docker Sandboxes with microVM isolation)
 - [Upstash QStash](https://console.upstash.com/qstash) account and token
 - [NTFY](https://ntfy.sh/) topic for receiving notifications (passed as `notification_topic` parameter to each tool)
 
@@ -611,6 +611,20 @@ To test against FastMCP Cloud deployment:
 
 Run Claude Code in an isolated Docker container with all dependencies pre-installed.
 
+> **Requires Docker Desktop 4.58+** with microVM-based sandboxes.
+
+### Migrating from Docker Desktop < 4.58
+
+If upgrading from an older Docker Desktop version, remove old container-based sandboxes first:
+
+```bash
+# Remove old sandbox containers
+docker rm -f $(docker ps -q -a --filter="label=docker/sandbox=true")
+
+# Remove credential volume
+docker volume rm docker-claude-sandbox-data
+```
+
 ### Build the Custom Template
 
 ```bash
@@ -619,45 +633,39 @@ docker build -t cronty-dev .
 
 ### Set Environment Variables
 
-The `.env` file is not mounted in the container for security. Set variables in your shell:
+Docker Sandboxes run via a daemon that reads environment variables from your shell config files. Add these to `~/.zshrc` or `~/.bashrc`:
 
 ```bash
-# Option 1: Source from .env file
-set -a; source .env; set +a
-
-# Option 2: Add to ~/.zshrc or ~/.bashrc for persistence
+# Required
 export QSTASH_TOKEN=your_qstash_token_here
-export ANTHROPIC_EVAL_API_KEY=your_api_key_here  # Required for running evaluations
+export AUTH_DISABLED=true  # For development mode
+
+# Optional (for production/evaluations)
 export JWT_SECRET=your_jwt_secret_here           # Required if AUTH_DISABLED is not set
+export ANTHROPIC_EVAL_API_KEY=your_api_key_here  # Required for running evaluations
+```
+
+After adding, apply changes and restart Docker Desktop:
+
+```bash
+source ~/.zshrc  # or ~/.bashrc
+# Then restart Docker Desktop for the daemon to pick up new variables
 ```
 
 ### Run Claude Code in Sandbox
 
 ```bash
-# Development mode (auth disabled)
-docker sandbox run \
-  -e QSTASH_TOKEN=$QSTASH_TOKEN \
-  -e AUTH_DISABLED=true \
-  --template cronty-dev claude
+# Run with custom template
+docker sandbox run --template cronty-dev --load-local-template claude .
 
 # Continue a previous conversation
-docker sandbox run \
-  -e QSTASH_TOKEN=$QSTASH_TOKEN \
-  -e AUTH_DISABLED=true \
-  --template cronty-dev claude -c
+docker sandbox run --template cronty-dev --load-local-template claude . -- -c
 
 # With a direct prompt
-docker sandbox run \
-  -e QSTASH_TOKEN=$QSTASH_TOKEN \
-  -e AUTH_DISABLED=true \
-  --template cronty-dev claude "Run the tests"
+docker sandbox run --template cronty-dev --load-local-template claude . -- -p "Run the tests"
 
-# With auth enabled and evaluation support
-docker sandbox run \
-  -e QSTASH_TOKEN=$QSTASH_TOKEN \
-  -e JWT_SECRET=$JWT_SECRET \
-  -e ANTHROPIC_EVAL_API_KEY=$ANTHROPIC_EVAL_API_KEY \
-  --template cronty-dev claude
+# Run with a named sandbox (for persistence)
+docker sandbox run --name cronty --template cronty-dev --load-local-template claude .
 ```
 
 ### Claude Settings in Sandbox
